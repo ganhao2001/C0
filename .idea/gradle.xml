@@ -5,6 +5,13 @@
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
         <option name="distributionType" value="DEFAULT_WRAPPED" />
+        <option name="externalProjectPath" value="$USER_HOME$/Desktop/大三作业/编译原理/untitled" />
+        <option name="gradleHome" value="D:/soft/gradle/gradle-6.6.1" />
+        <option name="gradleJvm" value="11" />
+        <option name="useQualifiedModuleNames" value="true" />
+      </GradleProjectSettings>
+      <GradleProjectSettings>
+        <option name="distributionType" value="DEFAULT_WRAPPED" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="gradleHome" value="D:/soft/gradle/gradle-6.6.1" />
         <option name="gradleJvm" value="11" />

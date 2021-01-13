@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 package c0.error;
 
 import c0.util.Pos;
@@ -34,40 +33,3 @@ public class AnalyzeError extends CompileError {
         return new StringBuilder().append("Analyze Error: ").append(code).append(", at: ").append(pos).toString();
     }
 }
-=======
-package c0.error;
-
-import c0.util.Pos;
-
-public class AnalyzeError extends CompileError {
-    private static final long serialVersionUID = 1L;
-
-    ErrorCode code;
-    Pos pos;
-
-    @Override
-    public ErrorCode getErr() {
-        return code;
-    }
-
-    @Override
-    public Pos getPos() {
-        return pos;
-    }
-
-    /**
-     * @param errorToken
-     * @param code
-     * @param pos
-     */
-    public AnalyzeError(ErrorCode code, Pos pos) {
-        this.code = code;
-        this.pos = pos;
-    }
-
-    @Override
-    public String toString() {
-        return new StringBuilder().append("Analyze Error: ").append(code).append(", at: ").append(pos).toString();
-    }
-}
->>>>>>> 0dbb005... 修改
