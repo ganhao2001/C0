@@ -4,22 +4,21 @@ import java.util.Objects;
 
 public class Instruction {
     private Operation opt;
-    Integer x;
+    int off;
+    int len;
 
     public Instruction(Operation opt) {
         this.opt = opt;
-        this.x = 0;
+        this.len = 1;
     }
 
-    public Instruction(Operation opt, Integer x) {
+    public Instruction(Operation opt, int off) {
+        this.off = off;
         this.opt = opt;
-        this.x = x;
+        this.len = 2;
     }
 
-    public Instruction() {
-        this.opt = c0.instruction.Operation.LIT;
-        this.x = 0;
-    }
+
 
     @Override
     public boolean equals(Object o) {
@@ -28,12 +27,12 @@ public class Instruction {
         if (o == null || getClass() != o.getClass())
             return false;
         Instruction that = (Instruction) o;
-        return opt == that.opt && Objects.equals(x, that.x);
+        return opt == that.opt && Objects.equals(off, that.off);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(opt, x);
+        return Objects.hash(opt, off);
     }
 
     public Operation getOpt() {
@@ -44,30 +43,69 @@ public class Instruction {
         this.opt = opt;
     }
 
-    public Integer getX() {
-        return x;
+    public Integer getOff() {
+        return off;
     }
 
-    public void setX(Integer x) {
-        this.x = x;
+    public void setOff(int off) {
+        this.off = off;
     }
 
-    @Override
-    public String toString() {
+    public int getLen() {
+        return len;
+    }
+
+    public void setLen(int len) {
+        this.len = len;
+    }
+    public int getType() {
         switch (this.opt) {
-            case ADD:
-            case DIV:
-            case ILL:
-            case MUL:
-            case SUB:
-            case WRT:
-                return String.format("%s", this.opt);
-            case LIT:
-            case LOD:
-            case STO:
-                return String.format("%s %s", this.opt, this.x);
+            case LOCA:
+                return 0xa;
+            case ARGA:
+                return 0xb;
+            case GLOBA:
+                return 0xc;
+            case ADD_I:
+                return 0x20;
+            case SUB_I:
+                return 0x21;
+            case MUL_I:
+                return 0x22;
+            case DIV_I:
+                return 0x23;
+            case STORE_64:
+                return 0x17;
+            case CMP_I:
+                return 0x30;
+            case PUSH:
+                return 0x1;
+            case SET_LT:
+                return 0x39;
+            case BR_FALSE:
+                return 0x42;
+            case BR_TRUE:
+                return 0x43;
+            case SET_GT:
+                return 0x3a;
+            case BR:
+                return 0x41;
+            case RET:
+                return 0x49;
+            case CALLNAME:
+                return 0x4a;
+            case LOAD_64:
+                return 0x13;
+            case STACKALLOC:
+                return 0x1a;
+            case CALL:
+                return 0x48;
+            case NOT:
+                return 0x2e;
+            case NEG_I:
+                return 0x34;
             default:
-                return "ILL";
+                return 0xFF;
         }
     }
 }

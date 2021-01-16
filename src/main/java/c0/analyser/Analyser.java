@@ -6,7 +6,7 @@ import c0.error.ErrorCode;
 import c0.error.ExpectedTokenError;
 import c0.error.TokenizeError;
 import c0.instruction.Instruction;
-import c0.instruction.Operation;
+import c0.table.SymbolEntry;
 import c0.tokenizer.Token;
 import c0.tokenizer.TokenType;
 import c0.tokenizer.Tokenizer;
