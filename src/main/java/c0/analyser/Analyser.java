@@ -140,57 +140,42 @@ public final class Analyser {
         }
     }
 
-
-
-    /**
-     * 添加一个符号
-     *
-     * @param name          名字
-     * @param isInitialized 是否已赋值
-     * @param isConstant    是否是常量
-     * @param curPos        当前 token 的位置（报错用）
-     * @throws AnalyzeError 如果重复定义了则抛异常
-     */
-    private void addSymbol(String name, boolean isInitialized, boolean isConstant, Pos curPos) throws AnalyzeError {
-        if (this.symbolTable.get(name) != null) {
-            throw new AnalyzeError(ErrorCode.DuplicateName, curPos);
-        } else {
-            this.symbolTable.put(name, new SymbolEntry());
+    private Token expect(List<TokenType> tokenTypes)throws CompileError{
+        var token = peek();
+        for (TokenType tt : tokenTypes) {
+            if (token.getTokenType() == tt) {
+                return next();
+            }
         }
+        throw new ExpectedTokenError(tokenTypes, token);
     }
 
-    /**
-     * 设置符号为已赋值
-     *
-     * @param name   符号名称
-     * @param curPos 当前位置（报错用）
-     * @throws AnalyzeError 如果未定义则抛异常
-     */
-    private void declareSymbol(String name, Pos curPos) throws AnalyzeError {
-        var entry = this.symbolTable.get(name);
-        if (entry == null) {
-            throw new AnalyzeError(ErrorCode.NotDeclared, curPos);
-        } else {
-            entry.setInitialized(true);
+    private TokenType isComparer(Token token){
+        if (token.getTokenType() == TokenType.EQ ||
+                token.getTokenType() == TokenType.NEQ ||
+                token.getTokenType() == TokenType.LT ||
+                token.getTokenType() == TokenType.GT ||
+                token.getTokenType() == TokenType.LE ||
+                token.getTokenType() == TokenType.GE) {
+            return token.getTokenType();
         }
+        return null;
     }
 
-    /**
-     * 获取变量在栈上的偏移
-     *
-     * @param name   符号名
-     * @param curPos 当前位置（报错用）
-     * @return 栈偏移
-     * @throws AnalyzeError
-     */
-    private int getOffset(String name, Pos curPos) throws AnalyzeError {
-        var entry = this.symbolTable.get(name);
-        if (entry == null) {
-            throw new AnalyzeError(ErrorCode.NotDeclared, curPos);
-        } else {
-            return entry.getStackOffset();
+    private Value analysisExpr(Token left)throws CompileError{
+        Value value=new Value();
+        List<Instruction> instructions=new ArrayList<>();
+        if(left!=null){
+
         }
+        return value;
     }
+
+    private Value analysis
+
+
+
+
 
     /**
      * 获取变量是否是常量
