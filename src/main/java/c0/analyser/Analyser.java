@@ -7,6 +7,7 @@ import c0.error.ExpectedTokenError;
 import c0.error.TokenizeError;
 import c0.instruction.Instruction;
 import c0.table.SymbolEntry;
+import c0.table.Table;
 import c0.tokenizer.Token;
 import c0.tokenizer.TokenType;
 import c0.tokenizer.Tokenizer;
@@ -19,21 +20,23 @@ public final class Analyser {
     Tokenizer tokenizer;
     ArrayList<Instruction> instructions;
 
+    boolean hasReturnValue =false;
     /** 当前偷看的 token */
     Token peekedToken = null;
 
     /** 符号表 */
-    HashMap<String, SymbolEntry> symbolTable = new HashMap<>();
-
+    Table table=new Table();
+    public Table getTable(){return this.table};
     /** 下一个变量的栈偏移 */
     int nextOffset = 0;
-
+    int deep =1;
     public Analyser(Tokenizer tokenizer) {
         this.tokenizer = tokenizer;
         this.instructions = new ArrayList<>();
     }
 
     public List<Instruction> analyse() throws CompileError {
+        table.init();
         analyseProgram();
         return instructions;
     }
@@ -79,6 +82,32 @@ public final class Analyser {
         return token.getTokenType() == tt;
     }
 
+    private boolean checkExpr()throws TokenizeError{
+        if(check(TokenType.UINT_LITERAL) ||
+                check(TokenType.DOUBLE_LITERAL) ||
+                check(TokenType.STRING_LITERAL) ||
+                check(TokenType.CHAR_LITERAL) ||
+                check(TokenType.IDENT) ||
+                check(TokenType.MINUS) ||
+                check(TokenType.L_PAREN)){
+            return true;
+        }
+        return false;
+    }
+    private boolean checkStmt()throws TokenizeError{
+        if(check(TokenType.LET_KW) ||
+                check(TokenType.CONST_KW) ||
+                check(TokenType.IF_KW) ||
+                check(TokenType.WHILE_KW) ||
+                check(TokenType.RETURN_KW) ||
+                check(TokenType.L_BRACE) ||
+                check(TokenType.SEMICOLON) ||
+                checkExpr()){
+            return true;
+        }
+        return false;
+    }
+
     /**
      * 如果下一个 token 的类型是 tt，则前进一个 token 并返回这个 token
      *
@@ -111,14 +140,7 @@ public final class Analyser {
         }
     }
 
-    /**
-     * 获取下一个变量的栈偏移
-     *
-     * @return
-     */
-    private int getNextVariableOffset() {
-        return this.nextOffset++;
-    }
+
 
     /**
      * 添加一个符号
@@ -133,7 +155,7 @@ public final class Analyser {
         if (this.symbolTable.get(name) != null) {
             throw new AnalyzeError(ErrorCode.DuplicateName, curPos);
         } else {
-            this.symbolTable.put(name, new SymbolEntry(isConstant, isInitialized, getNextVariableOffset()));
+            this.symbolTable.put(name, new SymbolEntry());
         }
     }
 
