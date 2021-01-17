@@ -55,7 +55,9 @@ public class Tokenizer {
         }else if (peek=='\'') {
             return lexCharLiteral();
         }else {
-            return lexOperatorOrUnknown();
+            Token token =lexOperatorOrUnknown();
+            if (token==null) return nextToken();
+            return token;
         }
     }
     /*读数字*/
@@ -63,6 +65,8 @@ public class Tokenizer {
         Pos startPos,endPos;
         startPos =new Pos(it.currentPos().row,it.currentPos().col);
         String num =new String();
+        num+=it.peekChar();
+        it.nextChar();
         char peek = it.peekChar();
         while(Character.isDigit(peek)){
             it.nextChar();
@@ -172,10 +176,10 @@ public class Tokenizer {
                 }
             case '/':
                 if (it.peekChar() == '/') {
+                    it.nextChar();
                     while (it.peekChar()!='\n'){
                         it.nextChar();
                     }
-                    it.nextChar();
                     return null;
                 } else {
                     return new Token(TokenType.DIV, "/", it.previousPos(), it.currentPos());
