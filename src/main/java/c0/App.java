@@ -109,7 +109,6 @@ public class App {
                 for (int i = 0; i < bytes.size(); i++) tmp[i] = bytes.get(i);
 
                 output.write(tmp);
-
             } catch (Exception e) {
                 // 遇到错误不输出，直接退出
                 System.err.println(e);
