@@ -455,7 +455,7 @@ public final class Analyser {
                             break;
                         case 5:
                             Value AChar =analyseExpr(peek());
-                            if(AChar.tokenType!=TokenType.CHAR_LITERAL||AChar.tokenType!=TokenType.INT){
+                            if(AChar.tokenType!=TokenType.CHAR_LITERAL&&AChar.tokenType!=TokenType.INT){
                                 throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
                             }
                             expect(TokenType.R_PAREN);
@@ -467,7 +467,7 @@ public final class Analyser {
                             break;
                         case 6:
                             Value string =analyseExpr(peek());
-                            if(string.tokenType!=TokenType.STRING_LITERAL||string.tokenType!=TokenType.INT){
+                            if(string.tokenType!=TokenType.STRING_LITERAL&&string.tokenType!=TokenType.INT){
                                 throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
                             }
                             expect(TokenType.R_PAREN);
