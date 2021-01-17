@@ -13,11 +13,13 @@ import java.util.Scanner;
 import c0.analyser.Analyser;
 import c0.error.CompileError;
 import c0.instruction.Instruction;
+import c0.table.Table;
 import c0.tokenizer.StringIter;
 import c0.tokenizer.Token;
 import c0.tokenizer.TokenType;
 import c0.tokenizer.Tokenizer;
 
+import c0.util.ToBinary;
 import net.sourceforge.argparse4j.*;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentAction;
@@ -98,10 +100,20 @@ public class App {
             List<Instruction> instructions;
             try {
                 instructions = analyzer.analyse();
+                Table table = analyzer.getTable();
+
+                ToBinary toBinary=new ToBinary(table);
+                List<Byte> bytes = toBinary.toBinary();
+                byte[] tmp = new byte[bytes.size()];
+
+                for (int i = 0; i < bytes.size(); i++) tmp[i] = bytes.get(i);
+
+                output.write(tmp);
+
             } catch (Exception e) {
                 // 遇到错误不输出，直接退出
                 System.err.println(e);
-                System.exit(0);
+                System.exit(1);
                 return;
             }
             for (Instruction instruction : instructions) {
