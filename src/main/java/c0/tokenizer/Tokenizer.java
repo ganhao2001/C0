@@ -235,32 +235,31 @@ public class Tokenizer {
         startPos = new Pos(it.currentPos().row, it.currentPos().col);
 
         it.nextChar();
-        char peek;
-        peek=it.peekChar();
+        char nextCH;
         String storage = new String();
 
-        while (peek != '"') {
+        while ((nextCH = it.peekChar()) != '"') {
             // 字符串常量的两头引号对不上号
             if (it.isEOF()) {
                 throw new TokenizeError(ErrorCode.IncompleteString, it.previousPos());
             }
 
             // 判断转义序列 escape_sequence -> '\' [\\"'nrt]
-            if (peek == '\\') {
+            if (nextCH == '\\') {
                 it.nextChar();
-                peek = it.peekChar();
-                if (peek == '\\') {
+
+                if ((nextCH = it.peekChar()) == '\\') {
 
                     storage += '\\';
                 }
-                else if (peek == '\'') storage += '\'';
-                else if (peek == '\"') storage += '\"';
-                else if (peek == 'n') storage += '\n';
-                else if (peek == 't') storage += '\t';
-                else if (peek == 'r') storage += '\r';
+                else if (nextCH == '\'') storage += '\'';
+                else if (nextCH == '\"') storage += '\"';
+                else if (nextCH == 'n') storage += '\n';
+                else if (nextCH == 't') storage += '\t';
+                else if (nextCH == 'r') storage += '\r';
                 else throw new TokenizeError(ErrorCode.InvalidEscapeSequence, it.previousPos());
             } else {
-                storage += peek;
+                storage += nextCH;
             }
 
             it.nextChar();
