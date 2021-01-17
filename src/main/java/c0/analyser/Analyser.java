@@ -173,7 +173,7 @@ public final class Analyser {
         Value value=new Value();
         List<Instruction> instructions=new ArrayList<>();
         if (front.getTokenType()==TokenType.IDENT){
-            front =next();
+            if(front.equals(peek())) front=next();
             if(peek().getTokenType()==TokenType.ASSIGN){
                 next();
                 boolean isGlobal=false;
