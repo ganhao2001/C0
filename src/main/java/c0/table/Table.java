@@ -72,7 +72,7 @@ public class Table {
         this.functionTable.get(this.functionTable.size()-1).addParam(name,token.getTokenType());
     }
     public void addSymbol(String name,TokenType tokenType,SymbolType symbolType,int deep,boolean isConstant, boolean isIitialized)throws AnalyzeError{
-        if(searchGlobalSymbol(name)!=null){
+        if(searchGlobalSymbol(name)!=null&&searchGlobalSymbol(name).getTokenType()!=TokenType.STRING_LITERAL){
             throw new AnalyzeError(ErrorCode.DuplicateGlobalVar,new Pos(0,0));
         }
         this.symbolTable.add(new SymbolEntry(name,tokenType,symbolType,this.symbolTable.size(),deep,isConstant,isIitialized));

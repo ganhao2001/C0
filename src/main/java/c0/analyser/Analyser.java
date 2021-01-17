@@ -45,6 +45,7 @@ public final class Analyser {
     public List<Instruction> analyse() throws CompileError {
         table.init();
         analyseProgram();
+        next();
         return instructions;
     }
 
@@ -625,6 +626,8 @@ public final class Analyser {
 
     private List<Instruction> analyseStmt()throws CompileError{
         List<Instruction> instructions=new ArrayList<>();
+
+
         while(checkStmt()){
             if (check(TokenType.LET_KW) || check(TokenType.CONST_KW)) instructions.addAll(analyseDeclStmt(false));
             else if (check(TokenType.IF_KW)) instructions.addAll(analyseIfStmt());
@@ -790,6 +793,8 @@ public final class Analyser {
     }
     private List<Instruction> analyseBlockStmt()throws CompileError{
         expect(TokenType.L_BRACE);
+        if (peek().getTokenType().ordinal() == 41)
+            throw new AnalyzeError(ErrorCode.NotComplete, peek().getStartPos());
         List<Instruction> instructions=new ArrayList<>();
         this.deep++;
         while (!check(TokenType.R_BRACE)){
