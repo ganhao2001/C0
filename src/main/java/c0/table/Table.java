@@ -30,19 +30,19 @@ public class Table {
         symbolTable.add(new SymbolEntry("putstr",TokenType.VOID,SymbolType.FUNC,6,1,true,true));
         symbolTable.add(new SymbolEntry("putln",TokenType.VOID,SymbolType.FUNC,7,1,true,true));
     }
-    private SymbolEntry searchGlobalSymbol(String name){
+    public SymbolEntry searchGlobalSymbol(String name){
         for(SymbolEntry symbolEntry: this.symbolTable){
             if (symbolEntry.getName().equals(name))return symbolEntry;
         }
         return null;
     }
-    private Function searchFunction(String name){
+    public Function searchFunction(String name){
         for (Function function:this.functionTable){
             if(function.getName().equals(name))return function;
         }
         return null;
     }
-    private SymbolEntry searchlocalSymbol(String name,int deep)throws AnalyzeError{
+    public SymbolEntry searchlocalSymbol(String name,int deep)throws AnalyzeError{
         return this.functionTable.get(this.functionTable.size()-1).searchSymbolInFunction(name,deep);
     }
     public int getFunctionID(String name){

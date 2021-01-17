@@ -6,12 +6,17 @@ import c0.error.ErrorCode;
 import c0.error.ExpectedTokenError;
 import c0.error.TokenizeError;
 import c0.instruction.Instruction;
+import c0.instruction.Operation;
+import c0.table.Function;
 import c0.table.SymbolEntry;
+import c0.table.SymbolType;
 import c0.table.Table;
 import c0.tokenizer.Token;
 import c0.tokenizer.TokenType;
 import c0.tokenizer.Tokenizer;
 import c0.util.Pos;
+import org.checkerframework.checker.units.qual.A;
+import org.checkerframework.checker.units.qual.C;
 
 import java.util.*;
 
@@ -26,7 +31,7 @@ public final class Analyser {
 
     /** 符号表 */
     Table table=new Table();
-    public Table getTable(){return this.table};
+    public Table getTable(){return this.table;}
     /** 下一个变量的栈偏移 */
     int nextOffset = 0;
     int deep =1;
@@ -162,36 +167,569 @@ public final class Analyser {
         return null;
     }
 
-    private Value analysisExpr(Token left)throws CompileError{
+    private Value analyseExpr(Token front)throws CompileError{
         Value value=new Value();
         List<Instruction> instructions=new ArrayList<>();
-        if(left!=null){
-
+        if (front.getTokenType()==TokenType.IDENT){
+            front =next();
+            if(peek().getTokenType()==TokenType.ASSIGN){
+                next();
+                boolean isGlobal=false;
+                SymbolEntry symbolEntry=table.searchlocalSymbol((String)front.getValue(),this.deep);
+                if (symbolEntry==null) {
+                    symbolEntry= table.searchGlobalSymbol((String)front.getValue());
+                    isGlobal=true;
+                }
+                if (symbolEntry==null)throw new AnalyzeError(ErrorCode.NotDeclared, front.getStartPos());
+                if(symbolEntry.isConstant()) throw new AnalyzeError(ErrorCode.AssignToConstant, front.getStartPos());
+                if(isGlobal) instructions.add(new Instruction(Operation.GLOBA,symbolEntry.getStackOffset()));
+                else {
+                    if(symbolEntry.getSymbolType()==SymbolType.PARAM){
+                        instructions.add(new Instruction(Operation.ARGA,symbolEntry.getStackOffset()));
+                    }else instructions.add(new Instruction(Operation.LOCA,symbolEntry.getStackOffset()));
+                }
+                Value right=analyseExpr(peek());
+                if(symbolEntry.getTokenType()!=right.tokenType) throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+                instructions.addAll(right.instructions);
+                instructions.add(new Instruction(Operation.STORE_64));
+                value.setInstructions(instructions);
+                value.setConstant(false);
+                value.setTokenType(TokenType.VOID);
+            }
+            else {
+                Value left=analyseCE(front);
+                Value right = analyseBC(left);
+                instructions.addAll(left.instructions);
+                if(right!=null){
+                    instructions.addAll(right.instructions);
+                }
+                value.setTokenType(left.tokenType);
+                value.setInstructions(instructions);
+                value.setConstant(true);
+            }
+        }
+        else {
+            Value left=analyseCE(front);
+            Value right = analyseBC(left);
+            instructions.addAll(left.instructions);
+            if(right!=null){
+                instructions.addAll(right.instructions);
+            }
+            value.setTokenType(left.tokenType);
+            value.setInstructions(instructions);
+            value.setConstant(true);
         }
         return value;
     }
 
-    private Value analysis
+    private Value analyseCE(Token front)throws CompileError{
+        Value value=new Value();
+        List<Instruction> instructions =new ArrayList<>();
 
+        Value left =analyseTE(front);
+        instructions.addAll(left.instructions);
+        while(peek().getTokenType()==TokenType.PLUS||peek().getTokenType()==TokenType.MINUS){
+            Token op=next();
+            Value right=analyseTE(peek());
+            instructions.addAll(right.instructions);
 
-
-
-
-    /**
-     * 获取变量是否是常量
-     *
-     * @param name   符号名
-     * @param curPos 当前位置（报错用）
-     * @return 是否为常量
-     * @throws AnalyzeError
-     */
-    private boolean isConstant(String name, Pos curPos) throws AnalyzeError {
-        var entry = this.symbolTable.get(name);
-        if (entry == null) {
-            throw new AnalyzeError(ErrorCode.NotDeclared, curPos);
-        } else {
-            return entry.isConstant();
+            if (left.tokenType!=right.tokenType||left.tokenType==TokenType.VOID)
+                throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+            if (op.getTokenType()==TokenType.PLUS){
+                if (left.tokenType==TokenType.INT){
+                    instructions.add(new Instruction(Operation.ADD_I));
+                }else if (left.tokenType==TokenType.DOUBLE){
+                    instructions.add(new Instruction(Operation.ADD_F));
+                }else throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+            }else {
+                if (left.tokenType==TokenType.INT){
+                    instructions.add(new Instruction(Operation.SUB_I));
+                }else if (left.tokenType==TokenType.DOUBLE){
+                    instructions.add(new Instruction(Operation.SUB_F));
+                }else throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+            }
         }
+        value.setTokenType(left.tokenType);
+        value.setInstructions(instructions);
+        value.setConstant(true);
+        return value;
+
+    }
+
+    private Value analyseBC(Value left)throws CompileError{
+        Value value=new Value();
+        List<Instruction> instructions=new ArrayList<>();
+        if(isComparer(peek())!=null){
+            Token op =next();
+
+            Value right =analyseCE(peek());
+            instructions.addAll(right.instructions);
+            if(left.tokenType!=right.tokenType||left.tokenType==TokenType.VOID){
+                throw new AnalyzeError(ErrorCode.TypeMisMatch ,new Pos(0,0));
+            }
+            if(left.tokenType==TokenType.INT){
+                instructions.add(new Instruction(Operation.CMP_I));
+            }else if(left.tokenType==TokenType.DOUBLE){
+                instructions.add(new Instruction(Operation.CMP_F));
+            }else {
+                throw new AnalyzeError(ErrorCode.TypeMisMatch ,new Pos(0,0));
+            }
+            switch (op.getTokenType()){
+                case EQ:instructions.add(new Instruction(Operation.NOT));
+                    break;
+                case NEQ:break;
+                case LT:instructions.add(new Instruction(Operation.SET_LT));
+                    break;
+                case GT:instructions.add(new Instruction(Operation.SET_GT));
+                    break;
+                case LE:instructions.add(new Instruction(Operation.SET_GT));
+                    instructions.add(new Instruction(Operation.NOT));
+                    break;
+                case GE:instructions.add(new Instruction(Operation.SET_LT));
+                    instructions.add(new Instruction(Operation.NOT));
+                    break;
+                default:break;
+            }
+            value.setTokenType(TokenType.BOOL);
+            value.setInstructions(instructions);
+            value.setConstant(true);
+            return value;
+        }
+        return null;
+
+    }
+
+    private Value analyseTE(Token front)throws CompileError{
+        Value value=new Value();
+        List<Instruction>instructions=new ArrayList<>();
+
+        Value left =analyseFE(front);
+        instructions.addAll(left.instructions);
+        while (peek().getTokenType()==TokenType.MUL||peek().getTokenType()==TokenType.DIV){
+            Token op =next();
+            Value right =analyseFE(peek());
+            instructions.addAll(right.instructions);
+            if(left.tokenType!=right.tokenType||left.tokenType==TokenType.VOID){
+                throw new AnalyzeError(ErrorCode.TypeMisMatch ,new Pos(0,0));
+            }
+
+            if (op.getTokenType()==TokenType.MUL){
+                if (left.tokenType==TokenType.INT){
+                    instructions.add(new Instruction(Operation.MUL_I));
+                }else if (left.tokenType==TokenType.DOUBLE){
+                    instructions.add(new Instruction(Operation.MUL_F));
+                }else throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+            }else {
+                if (left.tokenType==TokenType.INT){
+                    instructions.add(new Instruction(Operation.DIV_I));
+                }else if (left.tokenType==TokenType.DOUBLE){
+                    instructions.add(new Instruction(Operation.DIV_F));
+                }else throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+            }
+        }
+        value.setConstant(true);
+        value.setInstructions(instructions);
+        value.setTokenType(left.tokenType);
+        return value;
+    }
+
+    private Value analyseFE(Token front)throws CompileError{
+        Value value=new Value();
+        List<Instruction> instructions=new ArrayList<>();
+
+        Value left=analyseAE(front);
+        instructions.addAll(left.instructions);
+        TokenType needType=left.tokenType;
+        if (peek().getTokenType()==TokenType.AS_KW){
+            next();
+            if (peek().getTokenType()==TokenType.INT){
+                if (needType==TokenType.DOUBLE){
+                    needType=TokenType.INT;
+                    instructions.add(new Instruction(Operation.FTOI));
+                }
+                next();
+            }else if(peek().getTokenType()==TokenType.DOUBLE){
+                if (needType==TokenType.INT){
+                    needType=TokenType.DOUBLE;
+                    instructions.add(new Instruction(Operation.ITOF));
+                }
+                next();
+            }
+        }
+        value.setTokenType(needType);
+        value.setInstructions(instructions);
+        value.setConstant(true);
+        return value;
+    }
+
+    private Value analyseAE(Token front)throws CompileError{
+        Value value=new Value();
+        List<Instruction> instructions=new ArrayList<>();
+        boolean isNot=false;
+        if(front.getTokenType()==TokenType.MINUS){
+            next();
+            isNot=true;
+        }
+        Value IE=analyseIE(peek());
+        instructions.addAll(IE.instructions);
+        if(isNot){
+            if(IE.tokenType==TokenType.VOID){
+                throw new AnalyzeError(ErrorCode.TypeMisMatch ,new Pos(0,0));
+            }else {
+                if(IE.tokenType==TokenType.INT||IE.tokenType==TokenType.STRING_LITERAL||IE.tokenType==TokenType.CHAR_LITERAL){
+                    instructions.add(new Instruction(Operation.NEG_I));
+                }else if(IE.tokenType==TokenType.DOUBLE){
+                    instructions.add(new Instruction(Operation.NEG_F));
+                }else throw new AnalyzeError(ErrorCode.TypeMisMatch ,new Pos(0,0));
+            }
+        }
+        value.setConstant(true);
+        value.setInstructions(instructions);
+        value.setTokenType(IE.tokenType);
+        return value;
+    }
+
+    private Value analyseIE(Token front)throws CompileError{
+        Value value=new Value();
+        List<Instruction>instructions =new ArrayList<>();
+        if (front.getTokenType()==TokenType.IDENT)
+        {
+            Token nexttoken=next();
+            if (nexttoken.getTokenType()==TokenType.L_PAREN||peek().getTokenType()==TokenType.L_PAREN){
+                if(peek().getTokenType()==TokenType.L_PAREN){
+                    next();
+                }
+                int s=getStandardFunctionID((String)front.getValue());
+                if (s!=-1){
+                    List<Instruction> instructions1 =new ArrayList<>();
+                    switch (s){
+                        case 0:
+                            expect(TokenType.R_PAREN);
+                            instructions1.add(new Instruction(Operation.STACKALLOC,1));
+                            instructions1.add(new Instruction(Operation.CALLNAME,0));
+                            value.setTokenType(TokenType.INT);
+                            value.setInstructions(instructions1);
+                            value.setConstant(true);
+                            break;
+                        case 1:
+                            expect(TokenType.R_PAREN);
+                            instructions1.add(new Instruction(Operation.STACKALLOC, 1));
+                            instructions1.add(new Instruction(Operation.CALLNAME,1));
+                            value.setTokenType(TokenType.DOUBLE);
+                            value.setInstructions(instructions1);
+                            value.setConstant(true);
+                            break;
+                        case 2:
+                            expect(TokenType.R_PAREN);
+                            instructions1.add(new Instruction(Operation.STACKALLOC,1));
+                            instructions1.add(new Instruction(Operation.CALLNAME,2));
+                            value.setTokenType(TokenType.INT);
+                            value.setInstructions(instructions1);
+                            value.setConstant(true);
+                            break;
+                        case 3:
+                            Value Int =analyseExpr(peek());
+                            if(Int.tokenType!=TokenType.INT){
+                                throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+                            }
+                            expect(TokenType.R_PAREN);
+                            instructions1.addAll(Int.instructions);
+                            instructions1.add(new Instruction(Operation.CALLNAME,3));
+                            value.setTokenType(TokenType.VOID);
+                            value.setInstructions(instructions1);
+                            value.setConstant(true);
+                            break;
+                        case 4:
+                            Value ADouble =analyseExpr(peek());
+                            if(ADouble.tokenType!=TokenType.DOUBLE){
+                                throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+                            }
+                            expect(TokenType.R_PAREN);
+                            instructions1.addAll(ADouble.instructions);
+                            instructions1.add(new Instruction(Operation.CALLNAME,4));
+                            value.setTokenType(TokenType.VOID);
+                            value.setInstructions(instructions1);
+                            value.setConstant(true);
+                            break;
+                        case 5:
+                            Value AChar =analyseExpr(peek());
+                            if(AChar.tokenType!=TokenType.CHAR_LITERAL||AChar.tokenType!=TokenType.INT){
+                                throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+                            }
+                            expect(TokenType.R_PAREN);
+                            instructions1.addAll(AChar.instructions);
+                            instructions1.add(new Instruction(Operation.CALLNAME,5));
+                            value.setTokenType(TokenType.VOID);
+                            value.setInstructions(instructions1);
+                            value.setConstant(true);
+                            break;
+                        case 6:
+                            Value string =analyseExpr(peek());
+                            if(string.tokenType!=TokenType.STRING_LITERAL||string.tokenType!=TokenType.INT){
+                                throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+                            }
+                            expect(TokenType.R_PAREN);
+                            instructions1.addAll(string.instructions);
+                            instructions1.add(new Instruction(Operation.CALLNAME, 6));
+                            value.setTokenType(TokenType.VOID);
+                            value.setInstructions(instructions1);
+                            value.setConstant(true);
+                            break;
+                        case 7:
+
+                            expect(TokenType.R_PAREN);
+                            instructions1.add(new Instruction(Operation.CALLNAME, 7));
+                            value.setTokenType(TokenType.VOID);
+                            value.setInstructions(instructions1);
+                            value.setConstant(true);
+                            break;
+                        default:throw new AnalyzeError(ErrorCode.ShouldNotBeExist, peek().getStartPos());
+                    }
+                }
+                else {
+                    Function function=table.searchFunction((String) front.getValue());
+                    if(function==null){
+                        throw new AnalyzeError(ErrorCode.NotDeclared, front.getStartPos());
+                    }
+                    if(function.getType()!=TokenType.VOID){
+                        instructions.add(new Instruction(Operation.STACKALLOC,1));
+                    }else {
+                        instructions.add(new Instruction(Operation.STACKALLOC,0));
+                    }
+                    if(peek().getTokenType()!=TokenType.R_PAREN){
+                        List<Value> params=new ArrayList<>();
+                        do{
+                            Value param=analyseExpr(peek());
+                            params.add(param);
+                            instructions.addAll(param.instructions);
+                        }while (nextIf(TokenType.COMMA)!=null);
+                        if(function.getParamsnum()!=params.size()){
+                            throw new AnalyzeError(ErrorCode.FuncParamsMisMatch, peek().getStartPos());
+                        }
+                        int hasreturn =0;
+                        if(function.getType()!=TokenType.VOID){
+                            hasreturn=1;
+                        }
+                        for(int i=0;i<params.size();i++){
+                            if(params.get(i).tokenType!=function.getSymbolTable().get(i+hasreturn).getTokenType()){
+                               throw new AnalyzeError(ErrorCode.FuncParamsMisMatch, peek().getStartPos());
+                            }
+                        }
+                        expect(TokenType.R_PAREN);
+                    }else {
+                        expect(TokenType.R_PAREN);
+                    }
+                    int ID=table.getFunctionID((String)front.getValue());
+                    instructions.add(new Instruction(Operation.CALL,ID));
+                    value.setTokenType(function.getType());
+                    value.setInstructions(instructions);
+                    value.setConstant(true);
+                }
+            }
+            else if(peek().getTokenType()!=TokenType.L_PAREN){
+                boolean isGlobal=false;
+                SymbolEntry symbolEntry=table.searchlocalSymbol((String)front.getValue(),this.deep);
+                if (symbolEntry==null) {
+                    symbolEntry= table.searchGlobalSymbol((String)front.getValue());
+                    isGlobal=true;
+                }
+                if(symbolEntry==null) throw new AnalyzeError(ErrorCode.NotDeclared, front.getStartPos());
+                if(!symbolEntry.isInitialized()){
+                    throw new AnalyzeError(ErrorCode.NotInitialized, front.getStartPos());
+                }
+                if(isGlobal){
+                    instructions.add(new Instruction(Operation.GLOBA,symbolEntry.getStackOffset()));
+                }
+                else {
+                    if(symbolEntry.getSymbolType()==SymbolType.PARAM)
+                        instructions.add(new Instruction(Operation.ARGA,symbolEntry.getStackOffset()));
+                    else instructions.add(new Instruction(Operation.LOCA,symbolEntry.getStackOffset()));
+                }
+                instructions.add(new Instruction(Operation.LOAD_64));
+                TokenType ctype =symbolEntry.getTokenType();
+                if(peek().getTokenType()==TokenType.AS_KW){
+                    next();
+                    Token token=expect(List.of(TokenType.INT,TokenType.DOUBLE));
+                    if(symbolEntry.getTokenType()==TokenType.INT&&token.getTokenType()==TokenType.DOUBLE){
+                        ctype=TokenType.DOUBLE;
+                        instructions.add(new Instruction(Operation.ITOF));
+                    }
+                    if(symbolEntry.getTokenType()==TokenType.DOUBLE&&token.getTokenType()==TokenType.INT){
+                        ctype=TokenType.INT;
+                        instructions.add(new Instruction(Operation.FTOI));
+                    }
+                }
+                value.setConstant(symbolEntry.isConstant());
+                value.setInstructions(instructions);
+                value.setTokenType(ctype);
+            }
+        }else if (front.getTokenType()==TokenType.UINT_LITERAL)
+        {
+            Token Uint=expect(TokenType.UINT_LITERAL);
+            long i=(long) Uint.getValue();
+            instructions.add(new Instruction(Operation.PUSH,i));
+            value.setTokenType(TokenType.INT);
+            value.setConstant(true);
+            value.setInstructions(instructions);
+        }else if (front.getTokenType()==TokenType.DOUBLE_LITERAL)
+        {
+            Token dtoken=expect(TokenType.DOUBLE_LITERAL);
+            Double d=(Double) dtoken.getValue();
+            long li=Double.doubleToLongBits(d);
+            instructions.add(new Instruction(Operation.PUSH,li));
+
+            value.setTokenType(TokenType.DOUBLE_LITERAL);
+            value.setConstant(true);
+            value.setInstructions(instructions);
+        }else if(front.getTokenType()==TokenType.STRING_LITERAL)
+        {
+            Token string=next();
+            table.addSymbol((String)string.getValue(),TokenType.STRING_LITERAL, SymbolType.STRING,1,true,true);
+            long off=table.getSymbolOff((String) front.getValue());
+            instructions.add(new Instruction(Operation.PUSH,off));
+            value.setInstructions(instructions);
+            value.setConstant(true);
+            value.setTokenType(TokenType.INT);
+
+        }else if(front.getTokenType()==TokenType.CHAR_LITERAL)
+        {
+            instructions.add(new Instruction(Operation.PUSH,(char) front.getValue()));
+            next();
+            value.setTokenType(TokenType.INT);
+            value.setConstant(true);
+            value.setInstructions(instructions);
+        }else if(front.getTokenType()==TokenType.L_PAREN)
+        {
+            next();
+            value=analyseExpr(peek());
+            expect(TokenType.R_PAREN);
+        }else {
+            throw new AnalyzeError(ErrorCode.ExprERROR, peek().getEndPos());
+        }
+        return value;
+    }
+    public int getStandardFunctionID(String name){
+        if (name.equals("getint")) return 0;
+        if (name.equals("getdouble")) return 1;
+        if (name.equals("getchar")) return 2;
+        if (name.equals("putint")) return 3;
+        if (name.equals("putdouble")) return 4;
+        if (name.equals("putchar")) return 5;
+        if (name.equals("putstr")) return 6;
+        if (name.equals("putln")) return 7;
+        return -1;
+    }
+
+    private List<Instruction> analyseStmt()throws CompileError{
+        List<Instruction> instructions=new ArrayList<>();
+        while(checkStmt()){
+            if (check(TokenType.LET_KW) || check(TokenType.CONST_KW)) instructions.addAll(analyseDeclStmt(false));
+            else if (check(TokenType.IF_KW)) instructions.addAll(analyseIfStmt());
+            else if (check(TokenType.WHILE_KW)) instructions.addAll(analyseWhileStmt());
+            else if (check(TokenType.RETURN_KW)) instructions.addAll(analyseReturnStmt());
+            else if (check(TokenType.L_BRACE)) instructions.addAll(analyseBlockStmt());
+            else if (check(TokenType.SEMICOLON)) analyseEmptyStmt();
+            else instructions.addAll(analyseExprStmt());
+
+        }
+        return instructions;
+    }
+    private List<Instruction> analyseLetDeclStmt(boolean isGlobal)throws CompileError{
+        expect(TokenType.LET_KW);
+        Token ident=expect(TokenType.IDENT);
+        expect(TokenType.COLON);
+        List<Instruction> instructions=new ArrayList<>();
+        List<Instruction> analysis=new ArrayList<>();
+
+        Token type =expect(List.of(TokenType.INT,TokenType.DOUBLE));
+        boolean isInit =false;
+        if(!check(TokenType.SEMICOLON)){
+            expect(TokenType.ASSIGN);
+            Value right =analyseExpr(peek());
+            analysis.addAll(right.instructions);
+            if(type.getTokenType()!=right.tokenType){
+                throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+            }
+            isInit =true;
+        }
+        if(isGlobal){
+            table.addSymbol((String) ident.getValue(),type.getTokenType(),SymbolType.VAR,deep,false,true);
+            if(isInit){
+                long Off =table.getSymbolOff((String) ident.getValue());
+                table.getInstructions().add(new Instruction(Operation.GLOBA,Off));
+                table.getInstructions().addAll(analysis);
+                table.getInstructions().add(new Instruction(Operation.STORE_64));
+            }
+        }else {
+            table.addFuctionSymbol((String)ident.getValue(),type.getTokenType(),deep,false,true);
+            if(isInit){
+                long Off =table.getFunctionTable().get(table.getFunctionTable().size()-1).getSymbolOff((String) ident.getValue());
+                instructions.add(new Instruction(Operation.LOCA,Off));
+                instructions.addAll(analysis);
+                instructions.add(new Instruction(Operation.STORE_64));
+            }
+        }
+        expect(TokenType.SEMICOLON);
+        return instructions;
+    }
+    private List<Instruction> analyseConstDeclStmt(boolean isGlobal)throws CompileError{
+        expect(TokenType.CONST_KW);
+        Token ident = expect(TokenType.IDENT);
+        expect(TokenType.COLON);
+        Token type = expect(List.of(TokenType.INT, TokenType.DOUBLE));
+        expect(TokenType.ASSIGN);
+        List<Instruction> instructions=new ArrayList<>();
+        List<Instruction> analysis=new ArrayList<>();
+        Value right=analyseExpr(peek());
+        analysis.addAll(right.instructions);
+        if(type.getTokenType()!=right.tokenType){
+            throw new  AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+        }
+        if(isGlobal){
+            table.addSymbol((String) ident.getValue(),type.getTokenType(),SymbolType.VAR,deep,true,true);
+            long Off =table.getSymbolOff((String) ident.getValue());
+            table.getInstructions().add(new Instruction(Operation.GLOBA,Off));
+            table.getInstructions().addAll(analysis);
+            table.getInstructions().add(new Instruction(Operation.STORE_64));
+        }else {
+            table.addFuctionSymbol((String)ident.getValue(),type.getTokenType(),deep,true,true);
+            long Off =table.getFunctionTable().get(table.getFunctionTable().size()-1).getSymbolOff((String) ident.getValue());
+            instructions.add(new Instruction(Operation.LOCA,Off));
+            instructions.addAll(analysis);
+            instructions.add(new Instruction(Operation.STORE_64));
+        }
+        expect(TokenType.SEMICOLON);
+        return instructions;
+    }
+    private List<Instruction> analyseDeclStmt(boolean isGlobal)throws CompileError{
+        List<Instruction> instructions=new ArrayList<>();
+        if(check(TokenType.LET_KW)){
+            instructions.addAll(analyseLetDeclStmt(isGlobal));
+        }else if(check(TokenType.CONST_KW)){
+            instructions.addAll(analyseConstDeclStmt(isGlobal));
+        }
+        return instructions;
+    }
+    private List<Instruction> analyseIfStmt()throws CompileError{
+
+    }
+    private List<Instruction> analyseWhileStmt()throws CompileError{
+
+    }
+    private List<Instruction> analyseBlockStmt()throws CompileError{
+
+    }
+    private List<Instruction> analyseReturnStmt()throws CompileError{
+
+    }
+    private List<Instruction> analyseEmptyStmt()throws CompileError{
+
+    }
+    private List<Instruction> analyseExprStmt()throws CompileError{
+        List<Instruction> instructions=new ArrayList<>();
+        instructions.addAll(analyseExpr(peek()).instructions);
+        expect(TokenType.SEMICOLON);
+        return instructions;
     }
 
     /**

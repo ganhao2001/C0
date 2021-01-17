@@ -4,7 +4,7 @@ import java.util.Objects;
 
 public class Instruction {
     private Operation opt;
-    int off;
+    long off;
     int len;
 
     public Instruction(Operation opt) {
@@ -12,7 +12,7 @@ public class Instruction {
         this.len = 1;
     }
 
-    public Instruction(Operation opt, int off) {
+    public Instruction(Operation opt, long off) {
         this.off = off;
         this.opt = opt;
         this.len = 2;
@@ -43,11 +43,11 @@ public class Instruction {
         this.opt = opt;
     }
 
-    public Integer getOff() {
+    public long getOff() {
         return off;
     }
 
-    public void setOff(int off) {
+    public void setOff(long off) {
         this.off = off;
     }
 
