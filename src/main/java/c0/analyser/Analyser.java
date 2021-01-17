@@ -14,6 +14,7 @@ import c0.table.Table;
 import c0.tokenizer.Token;
 import c0.tokenizer.TokenType;
 import c0.tokenizer.Tokenizer;
+import c0.util.Jump;
 import c0.util.Pos;
 import org.checkerframework.checker.units.qual.A;
 import org.checkerframework.checker.units.qual.C;
@@ -35,6 +36,7 @@ public final class Analyser {
     /** 下一个变量的栈偏移 */
     int nextOffset = 0;
     int deep =1;
+    int retdeep=1;
     public Analyser(Tokenizer tokenizer) {
         this.tokenizer = tokenizer;
         this.instructions = new ArrayList<>();
@@ -711,20 +713,129 @@ public final class Analyser {
         return instructions;
     }
     private List<Instruction> analyseIfStmt()throws CompileError{
-
+        List<Instruction> instructions=new ArrayList<>();
+        List<Jump> jumps=new ArrayList<>();
+        expect(TokenType.IF_KW);
+        Value jumpcondition =analyseExpr(peek());
+        List<Instruction> block =analyseBlockStmt();
+        boolean hasRet=false;
+        if(block.size()>0&&block.get(block.size()-1).getOpt()==Operation.RET){
+            hasRet=true;
+        }
+        Jump ifJump=new Jump();
+        ifJump.setBlock(block);
+        ifJump.setJumpcon(jumpcondition.instructions);
+        ifJump.br.add(new Instruction(Operation.BR_TRUE,1));
+        ifJump.br.add(new Instruction(Operation.BR,(long)block.size()+(hasRet?0:1)));
+        ifJump.setHasRet(hasRet);
+        jumps.add(ifJump);
+        hasRet=false;
+        while(check(TokenType.ELSE_KW)){
+            next();
+            if (check(TokenType.IF_KW)){
+                next();
+                jumpcondition=analyseExpr(peek());
+                block=analyseBlockStmt();
+                if(block.size()>0&&block.get(block.size()-1).getOpt()==Operation.RET){
+                    hasRet=true;
+                }
+                Jump ifJump2=new Jump();
+                ifJump2.setBlock(block);
+                ifJump2.setJumpcon(jumpcondition.instructions);
+                ifJump2.br.add(new Instruction(Operation.BR_TRUE,1));
+                ifJump2.br.add(new Instruction(Operation.BR,(long)block.size()+(hasRet?0:1)));
+                ifJump2.setHasRet(hasRet);
+                jumps.add(ifJump2);
+                hasRet=false;
+            }
+            else {
+                block=analyseBlockStmt();
+                if(block.size()>0&&block.get(block.size()-1).getOpt()==Operation.RET){
+                    hasRet=true;
+                    hasReturnValue =true;
+                }
+                Jump elseJump =new Jump();
+                elseJump.setBlock(block);
+                elseJump.setHasRet(hasRet);
+                jumps.add(elseJump);
+                break;
+            }
+        }
+        int len=0;
+        for(int i=jumps.size()-1;i>0;i--){
+            int ajumplen=jumps.get(i).getlen();
+            len+=ajumplen;
+            if(!jumps.get(i-1).isHasRet()){
+                jumps.get(i-1).setJumpOff(len);
+            }
+        }
+        for(int i=-0;i<jumps.size();i++){
+            instructions.addAll(jumps.get(i).getAllInstruction());
+        }
+        return instructions;
     }
     private List<Instruction> analyseWhileStmt()throws CompileError{
-
+        List<Instruction> instructions=new ArrayList<>();
+        expect(TokenType.WHILE_KW);
+        boolean hasRet=false;
+        Value whilecondition =analyseExpr(peek());
+        List<Instruction> block =analyseBlockStmt();
+        instructions.addAll(whilecondition.instructions);
+        instructions.add(new Instruction(Operation.BR_TRUE,1));
+        instructions.add(new Instruction(Operation.BR,block.size()+1));
+        instructions.addAll(block);
+        instructions.add(new Instruction(Operation.BR,(-(whilecondition.instructions.size()+block.size()+3))));
+        return instructions;
     }
     private List<Instruction> analyseBlockStmt()throws CompileError{
+        expect(TokenType.L_BRACE);
+        List<Instruction> instructions=new ArrayList<>();
+        this.deep++;
+        while (!check(TokenType.R_BRACE)){
+            instructions.addAll(analyseStmt());
+        }
+        expect(TokenType.R_BRACE);
+        if(deep==2){
+            if(table.getFunctionTable().get(table.getFunctionTable().size()-1).getType()!=TokenType.VOID&&!hasReturnValue){
+                throw new AnalyzeError(ErrorCode.ShouldReturn, peek().getStartPos());
+            }
+        }
+        this.deep--;
+        return instructions;
 
     }
+
     private List<Instruction> analyseReturnStmt()throws CompileError{
-
+        expect(TokenType.RETURN_KW);
+        if(this.deep==2) hasReturnValue=true;
+        List<Instruction> instructions=new ArrayList<>();
+        TokenType type=table.getFunctionTable().get(table.getFunctionTable().size()-1).getType();
+        if(type==TokenType.VOID){
+            if(peek().getTokenType()!=TokenType.SEMICOLON){
+                throw new AnalyzeError(ErrorCode.ShouldNotReturn, peek().getStartPos());
+            }
+        }
+        else {
+            instructions.add(new Instruction(Operation.ARGA,0));
+            if(peek().getTokenType()==TokenType.SEMICOLON){
+                throw new AnalyzeError(ErrorCode.ShouldReturn, peek().getStartPos());
+            }
+            Value right =analyseExpr(peek());
+            if(type!=right.tokenType){
+                throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+            }
+            instructions.addAll(right.instructions);
+            instructions.add(new Instruction(Operation.STORE_64));
+        }
+        expect(TokenType.SEMICOLON);
+        instructions.add(new Instruction(Operation.RET));
+        return instructions;
     }
-    private List<Instruction> analyseEmptyStmt()throws CompileError{
 
+    private void analyseEmptyStmt()throws CompileError{
+        expect(TokenType.SEMICOLON);
     }
+
     private List<Instruction> analyseExprStmt()throws CompileError{
         List<Instruction> instructions=new ArrayList<>();
         instructions.addAll(analyseExpr(peek()).instructions);
@@ -732,19 +843,68 @@ public final class Analyser {
         return instructions;
     }
 
-    /**
-     * <程序> ::= 'begin'<主过程>'end'
-     */
+    private void analyseFunctionParam()throws CompileError{
+        if(check(TokenType.CONST_KW)){
+            next();
+        }
+        Token param =expect(TokenType.IDENT);
+        expect(TokenType.COLON);
+        Token type=expect(List.of(TokenType.VOID,TokenType.INT,TokenType.DOUBLE));
+        table.addParam((String)param.getValue(),type);
+    }
+
+    private void analyseFunctionParamList()throws CompileError{
+        do{
+            analyseFunctionParam();
+        }while (nextIf(TokenType.COMMA)!=null);
+    }
+
+    private void analyseFunction()throws CompileError{
+        List<Instruction>instructions=new ArrayList<>();
+        expect(TokenType.FN_KW);
+        Token function=expect(TokenType.IDENT);
+        expect(TokenType.L_PAREN);
+        table.addFunction((String)function.getValue());
+        if(!check(TokenType.R_PAREN)) analyseFunctionParamList();
+        expect(TokenType.R_PAREN);
+        expect(TokenType.ARROW);
+        Token type=expect(List.of(TokenType.VOID,TokenType.INT,TokenType.DOUBLE));
+        if(type.getTokenType()!=TokenType.VOID){
+            table.setFunctionType(type.getTokenType());
+        }
+        instructions.addAll(analyseBlockStmt());
+        hasReturnValue=false;
+        if(type.getTokenType()==TokenType.VOID){
+            instructions.add(new Instruction(Operation.RET));
+        }
+        table.addInstructionsToFunction(instructions);
+    }
+
+
     private void analyseProgram() throws CompileError {
-//        // 示例函数，示例如何调用子程序
-//        // 'begin'
-//        expect(TokenType.Begin);
-//
-//        analyseMain();
-//
-//        // 'end'
-//        expect(TokenType.End);
-//        expect(TokenType.EOF);
+        while(check(TokenType.LET_KW)||check(TokenType.CONST_KW)||check(TokenType.FN_KW)){
+            while (check(TokenType.LET_KW)||check(TokenType.CONST_KW)){
+                table.addInstructions(analyseDeclStmt(true));
+            }
+            while (check(TokenType.FN_KW)){
+                analyseFunction();
+            }
+        }
+        Function main =table.searchFunction("main");
+        if(main==null)throw new AnalyzeError(ErrorCode.WithOutMain, new Pos(0,0));
+        else {
+            if(main.getType()==TokenType.VOID){
+                table.addInstruction(new Instruction(Operation.CALL,table.getFunctionID("main")));
+            }else {
+                table.addInstruction(new Instruction(Operation.STACKALLOC,1));
+                table.addInstruction(new Instruction(Operation.CALL,table.getFunctionID("main")));
+            }
+        }
+        Function _start =new Function("_start",TokenType.VOID,0,0);
+        _start.setInstructions(table.getInstructions());
+        table.addStartFunction(_start);
+        table.addSymbol("main",main.getType(),SymbolType.FUNC,1,false,true);
+        table.addSymbol("_start",_start.getType(),SymbolType.FUNC,1,false,true);
     }
 
 }

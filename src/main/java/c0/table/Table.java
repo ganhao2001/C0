@@ -59,7 +59,9 @@ public class Table {
         }
         this.functionTable.add(new Function(name));
     }
-
+    public void addStartFunction(Function function){
+        this.functionTable.add(0,function);
+    }
     public void setFunctionType(TokenType type){
         if(type!=TokenType.VOID){
             this.functionTable.get(this.functionTable.size()-1).addReturnSlot(type);
@@ -91,6 +93,12 @@ public class Table {
     public void addInstructionToFunc(Instruction instruction) {
         Function funcEntry = this.functionTable.get(this.functionTable.size() - 1);
         funcEntry.addInstruction(instruction);
+    }
+    public void addInstructions(List<Instruction> instructions){
+        this.instructions.addAll(instructions);
+    }
+    public void addInstruction(Instruction instruction){
+        this.instructions.add(instruction);
     }
 
     public List<Function> getFunctionTable() {
