@@ -9,9 +9,9 @@ import java.util.HashMap;
 
 public class Tokenizer {
 
-    private c0.tokenizer.StringIter it;
+    private StringIter it;
     private HashMap<String,TokenType> keywords;
-    public Tokenizer(c0.tokenizer.StringIter it) {
+    public Tokenizer(StringIter it) {
         this.it = it;
         keywords = new HashMap<String,TokenType>();
         keywords.put("fn", TokenType.FN_KW);
@@ -36,13 +36,13 @@ public class Tokenizer {
      * @return
      * @throws TokenizeError 如果解析有异常则抛出
      */
-    public c0.tokenizer.Token nextToken() throws TokenizeError {
+    public Token nextToken() throws TokenizeError {
         it.readAll();
 
         // 跳过之前的所有空白字符
         skipSpaceCharacters();
         if (it.isEOF()) {
-            return new c0.tokenizer.Token(TokenType.EOF, "", it.currentPos(), it.currentPos());
+            return new Token(TokenType.EOF, "", it.currentPos(), it.currentPos());
         }
 
         char peek = it.peekChar();
@@ -59,7 +59,7 @@ public class Tokenizer {
         }
     }
     /*读数字*/
-    private c0.tokenizer.Token lexUIntOrDouble() throws TokenizeError {
+    private Token lexUIntOrDouble() throws TokenizeError {
         Pos startPos,endPos;
         startPos =new Pos(it.currentPos().row,it.currentPos().col);
         String num =new String();
@@ -98,19 +98,19 @@ public class Tokenizer {
             }else throw new TokenizeError(ErrorCode.InvalidDouble,it.currentPos());
             endPos =new Pos(it.currentPos().row,it.currentPos().col);
             Double doublenum=Double.parseDouble(num);
-            c0.tokenizer.Token token=new c0.tokenizer.Token(TokenType.DOUBLE_LITERAL,doublenum,startPos,endPos);
+            Token token=new Token(TokenType.DOUBLE_LITERAL,doublenum,startPos,endPos);
             return token;
         }
         /**Uint*/
         else {
             endPos=new Pos(it.currentPos().row,it.currentPos().col);
             Integer intnum=Integer.parseInt(num);
-            c0.tokenizer.Token token=new c0.tokenizer.Token(TokenType.UINT_LITERAL,intnum,startPos,endPos);
+            Token token=new Token(TokenType.UINT_LITERAL,intnum,startPos,endPos);
             return token;
         }
     }
 
-    private c0.tokenizer.Token lexIdentOrKeyword() throws TokenizeError {
+    private Token lexIdentOrKeyword() throws TokenizeError {
         Pos startPos,endPos;
         String IdentOrKY= new String();
         boolean isident=false;
@@ -138,37 +138,37 @@ public class Tokenizer {
         }
         endPos=new Pos(it.currentPos().row,it.currentPos().col);
         if(isident){
-            c0.tokenizer.Token token=new c0.tokenizer.Token(TokenType.IDENT,IdentOrKY,startPos,endPos);
+            Token token=new Token(TokenType.IDENT,IdentOrKY,startPos,endPos);
             return token;
         }else {
             if(keywords.containsKey(IdentOrKY)){
-                c0.tokenizer.Token token=new c0.tokenizer.Token(keywords.get(IdentOrKY),IdentOrKY,startPos,endPos);
+                Token token=new Token(keywords.get(IdentOrKY),IdentOrKY,startPos,endPos);
                 return token;
             }
-            c0.tokenizer.Token token=new c0.tokenizer.Token(TokenType.IDENT,IdentOrKY,startPos,endPos);
+            Token token=new Token(TokenType.IDENT,IdentOrKY,startPos,endPos);
             return token;
         }
     }
 
-    private c0.tokenizer.Token lexOperatorOrUnknown() throws TokenizeError {
+    private Token lexOperatorOrUnknown() throws TokenizeError {
         switch (it.nextChar()) {
             case '+':
-                return new c0.tokenizer.Token(TokenType.PLUS, "+", it.previousPos(), it.currentPos());
+                return new Token(TokenType.PLUS, "+", it.previousPos(), it.currentPos());
             case '-':
                 if (it.peekChar() == '>') {
                     it.nextChar();
-                    return new c0.tokenizer.Token(TokenType.ARROW, "->", it.previousPos(), it.currentPos());
+                    return new Token(TokenType.ARROW, "->", it.previousPos(), it.currentPos());
                 } else {
-                    return new c0.tokenizer.Token(TokenType.MINUS, "-", it.previousPos(), it.currentPos());
+                    return new Token(TokenType.MINUS, "-", it.previousPos(), it.currentPos());
                 }
             case '*':
-                return new c0.tokenizer.Token(TokenType.MUL, "*", it.previousPos(), it.currentPos());
+                return new Token(TokenType.MUL, "*", it.previousPos(), it.currentPos());
             case '=':
                 if (it.peekChar() == '=') {
                     it.nextChar();
-                    return new c0.tokenizer.Token(TokenType.EQ, "==", it.previousPos(), it.currentPos());
+                    return new Token(TokenType.EQ, "==", it.previousPos(), it.currentPos());
                 } else {
-                    return new c0.tokenizer.Token(TokenType.ASSIGN, "=", it.previousPos(), it.currentPos());
+                    return new Token(TokenType.ASSIGN, "=", it.previousPos(), it.currentPos());
                 }
             case '/':
                 if (it.peekChar() == '/') {
@@ -178,43 +178,43 @@ public class Tokenizer {
                     it.nextChar();
                     return null;
                 } else {
-                    return new c0.tokenizer.Token(TokenType.DIV, "/", it.previousPos(), it.currentPos());
+                    return new Token(TokenType.DIV, "/", it.previousPos(), it.currentPos());
                 }
             case '!':
                 if (it.peekChar() == '=') {
                     it.nextChar();
-                    return new c0.tokenizer.Token(TokenType.NEQ, "!=", it.previousPos(), it.currentPos());
+                    return new Token(TokenType.NEQ, "!=", it.previousPos(), it.currentPos());
                 } else {
                     throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
                 }
             case '<':
                 if (it.peekChar() == '=') {
                     it.nextChar();
-                    return new c0.tokenizer.Token(TokenType.LE, "<=", it.previousPos(), it.currentPos());
+                    return new Token(TokenType.LE, "<=", it.previousPos(), it.currentPos());
                 } else {
-                    return new c0.tokenizer.Token(TokenType.LT, "<", it.previousPos(), it.currentPos());
+                    return new Token(TokenType.LT, "<", it.previousPos(), it.currentPos());
                 }
             case '>':
                 if (it.peekChar() == '=') {
                     it.nextChar();
-                    return new c0.tokenizer.Token(TokenType.GE, ">=", it.previousPos(), it.currentPos());
+                    return new Token(TokenType.GE, ">=", it.previousPos(), it.currentPos());
                 } else {
-                    return new c0.tokenizer.Token(TokenType.GT, ">", it.previousPos(), it.currentPos());
+                    return new Token(TokenType.GT, ">", it.previousPos(), it.currentPos());
                 }
             case '(':
-                return new c0.tokenizer.Token(TokenType.L_PAREN, "(", it.previousPos(), it.currentPos());
+                return new Token(TokenType.L_PAREN, "(", it.previousPos(), it.currentPos());
             case ')':
-                return new c0.tokenizer.Token(TokenType.R_PAREN, ")", it.previousPos(), it.currentPos());
+                return new Token(TokenType.R_PAREN, ")", it.previousPos(), it.currentPos());
             case '{':
-                return new c0.tokenizer.Token(TokenType.L_BRACE, "{", it.previousPos(), it.currentPos());
+                return new Token(TokenType.L_BRACE, "{", it.previousPos(), it.currentPos());
             case '}':
-                return new c0.tokenizer.Token(TokenType.R_BRACE, "}", it.previousPos(), it.currentPos());
+                return new Token(TokenType.R_BRACE, "}", it.previousPos(), it.currentPos());
             case ',':
-                return new c0.tokenizer.Token(TokenType.COMMA, ",", it.previousPos(), it.currentPos());
+                return new Token(TokenType.COMMA, ",", it.previousPos(), it.currentPos());
             case ':':
-                return new c0.tokenizer.Token(TokenType.COLON, ":", it.previousPos(), it.currentPos());
+                return new Token(TokenType.COLON, ":", it.previousPos(), it.currentPos());
             case ';':
-                return new c0.tokenizer.Token(TokenType.SEMICOLON, ";", it.previousPos(), it.currentPos());
+                return new Token(TokenType.SEMICOLON, ";", it.previousPos(), it.currentPos());
             default:
                 throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
         }
@@ -230,7 +230,7 @@ public class Tokenizer {
 //
 //        }
 //    }
-    private c0.tokenizer.Token lexStringLiteral() throws TokenizeError {
+    private Token lexStringLiteral() throws TokenizeError {
         Pos startPos, endPos;
         startPos = new Pos(it.currentPos().row, it.currentPos().col);
 
@@ -269,10 +269,10 @@ public class Tokenizer {
         it.nextChar();
         endPos = new Pos(it.currentPos().row, it.currentPos().col);
 
-        return new c0.tokenizer.Token(TokenType.STRING_LITERAL, storage, startPos, endPos);
+        return new Token(TokenType.STRING_LITERAL, storage, startPos, endPos);
     }
 
-    private c0.tokenizer.Token lexCharLiteral() throws TokenizeError {
+    private Token lexCharLiteral() throws TokenizeError {
         Pos startPos, endPos;
         startPos = new Pos(it.currentPos().row, it.currentPos().col);
 
@@ -305,7 +305,7 @@ public class Tokenizer {
             it.nextChar();
             peek=it.peekChar();
             endPos = new Pos(it.currentPos().row, it.currentPos().col);
-            return new c0.tokenizer.Token(TokenType.CHAR_LITERAL, storage, startPos, endPos);
+            return new Token(TokenType.CHAR_LITERAL, storage, startPos, endPos);
         } else {
             throw new TokenizeError(ErrorCode.IncompleteChar, it.previousPos());
         }

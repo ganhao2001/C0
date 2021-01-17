@@ -568,8 +568,9 @@ public final class Analyser {
         }else if (front.getTokenType()==TokenType.UINT_LITERAL)
         {
             Token Uint=expect(TokenType.UINT_LITERAL);
-            long i=(long) Uint.getValue();
-            instructions.add(new Instruction(Operation.PUSH,i));
+            Integer i=(Integer) Uint.getValue();
+            long it01=i;
+            instructions.add(new Instruction(Operation.PUSH,it01));
             value.setTokenType(TokenType.INT);
             value.setConstant(true);
             value.setInstructions(instructions);
