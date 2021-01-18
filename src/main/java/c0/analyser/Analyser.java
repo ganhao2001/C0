@@ -382,15 +382,15 @@ public final class Analyser {
     private Value analyseAE(Token front)throws CompileError{
         Value value=new Value();
         List<Instruction> instructions=new ArrayList<>();
-        boolean isNot=false;
-        if(front.getTokenType()==TokenType.MINUS){
+        int notnum=0;
+        while (front.getTokenType()==TokenType.MINUS){
             next();
-            isNot=true;
+            notnum++;
             front=peek();
         }
         Value IE=analyseIE(front);
         instructions.addAll(IE.instructions);
-        if(isNot){
+        if(notnum%2==1){
             if(IE.tokenType==TokenType.VOID){
                 throw new AnalyzeError(ErrorCode.TypeMisMatch ,new Pos(0,0));
             }else {
