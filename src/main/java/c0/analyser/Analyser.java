@@ -897,7 +897,20 @@ private List<Instruction> analyseBlockStmt(int len)throws CompileError{
             instructions.addAll(S);
             if(check(TokenType.EOF)) throw new AnalyzeError(ErrorCode.EOF,peek().getStartPos());
             if(check(TokenType.BREAK_KW)&&breakdeep>1){
-                next();
+                for(;brace>0;){
+                    while (!check(TokenType.R_BRACE)||!check(TokenType.L_BRACE)){
+                        next();
+                    }
+                    if (check(TokenType.L_BRACE)){
+                        brace++;
+                        next();
+                    }
+                    if(check(TokenType.R_BRACE)){
+                        brace--;
+                        next();
+                    }
+                }
+                break;
             }
         }
         if(brace==1)expect(TokenType.R_BRACE);
