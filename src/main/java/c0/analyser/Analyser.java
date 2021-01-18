@@ -681,9 +681,13 @@ public final class Analyser {
             expect(TokenType.ASSIGN);
             Value right =analyseExpr(peek());
             analysis.addAll(right.instructions);
-            if((type.getTokenType()==TokenType.INT&&right.tokenType!=TokenType.UINT_LITERAL)
-                    ||(type.getTokenType()==TokenType.DOUBLE&&right.tokenType!=TokenType.DOUBLE_LITERAL)){
-                throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+            if(type.getTokenType()==TokenType.INT){
+                if (right.tokenType!=TokenType.UINT_LITERAL)
+                    throw new  AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+            }else if(type.getTokenType()==TokenType.DOUBLE){
+                if(right.tokenType!=TokenType.DOUBLE_LITERAL){
+                    throw new  AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+                }
             }
             isInit =true;
         }
@@ -717,10 +721,15 @@ public final class Analyser {
         List<Instruction> analysis=new ArrayList<>();
         Value right=analyseExpr(peek());
         analysis.addAll(right.instructions);
-        if((type.getTokenType()==TokenType.INT&&right.tokenType!=TokenType.UINT_LITERAL)
-                ||(type.getTokenType()==TokenType.DOUBLE&&right.tokenType!=TokenType.DOUBLE_LITERAL)){
-            throw new  AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+        if(type.getTokenType()==TokenType.INT){
+            if (right.tokenType!=TokenType.UINT_LITERAL)
+                throw new  AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+        }else if(type.getTokenType()==TokenType.DOUBLE){
+            if(right.tokenType!=TokenType.DOUBLE_LITERAL){
+                throw new  AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+            }
         }
+
         if(isGlobal){
             table.addSymbol((String) ident.getValue(),type.getTokenType(),SymbolType.VAR,deep,true,true);
             long Off =table.getSymbolOff((String) ident.getValue());
