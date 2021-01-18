@@ -223,7 +223,6 @@ public final class Analyser {
                 value.setInstructions(instructions);
                 value.setConstant(true);
             }
-
         }
         else {
             Value left=analyseCE(front);
@@ -649,8 +648,8 @@ public final class Analyser {
             else if (check(TokenType.L_BRACE)) instructions.addAll(analyseBlockStmt());
             else if (check(TokenType.SEMICOLON)) analyseEmptyStmt();
             else instructions.addAll(analyseExprStmt());
-
         }
+        if (check(TokenType.BREAK_KW)) throw new AnalyzeError(ErrorCode.NotComplete,new Pos(0,0));
         return instructions;
     }
     private List<Instruction> analyseLetDeclStmt(boolean isGlobal)throws CompileError{
@@ -806,7 +805,7 @@ public final class Analyser {
     }
     private List<Instruction> analyseBlockStmt()throws CompileError{
         expect(TokenType.L_BRACE);
-        if (peek().getTokenType().ordinal() == 41)
+        if (peek().getTokenType().ordinal() == 40)
             throw new AnalyzeError(ErrorCode.NotComplete, peek().getStartPos());
         List<Instruction> instructions=new ArrayList<>();
         this.deep++;
