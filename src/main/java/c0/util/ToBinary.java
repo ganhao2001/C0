@@ -33,7 +33,7 @@ public class ToBinary {
             List<Byte> bytes=new ArrayList<>();
             if(symbolEntry.getSymbolType()== SymbolType.FUNC||symbolEntry.getSymbolType()==SymbolType.STRING){
                 bytes =string2bytes(symbolEntry.getName());
-            }else if(symbolEntry.getTokenType()== TokenType.INT||symbolEntry.getTokenType()==TokenType.DOUBLE){
+            }else{
                 bytes=uint2bytes(8,0);
             }
             List<Byte> valueCount=uint2bytes(4,bytes.size());
