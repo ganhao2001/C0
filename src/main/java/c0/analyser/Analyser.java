@@ -843,7 +843,7 @@ public final class Analyser {
         boolean hasRet=false;
         breakdeep++;
         Value whilecondition =analyseExpr(peek());
-        List<Instruction> block =analyseBlockStmt(whilecondition.instructions.size());
+        List<Instruction> block =analyseBlockStmt();
         instructions.addAll(whilecondition.instructions);
         instructions.add(new Instruction(Operation.BR_TRUE,1));
         instructions.add(new Instruction(Operation.BR,block.size()+1));
@@ -895,11 +895,23 @@ private List<Instruction> analyseBlockStmt(int len)throws CompileError{
         while (!check(TokenType.R_BRACE)){
             List<Instruction> S=analyseStmt();
             instructions.addAll(S);
-            if (check(TokenType.BREAK_KW)||check(TokenType.CONTINUE_KW)){
-                throw new AnalyzeError(ErrorCode.BreakERROR,peek().getStartPos());
-            }
-
             if(check(TokenType.EOF)) throw new AnalyzeError(ErrorCode.EOF,peek().getStartPos());
+            if(check(TokenType.BREAK_KW)&&breakdeep>1){
+                for(;brace>0;){
+                    while (!check(TokenType.R_BRACE)||!check(TokenType.L_BRACE)){
+                        next();
+                    }
+                    if (check(TokenType.L_BRACE)){
+                        brace++;
+                        next();
+                    }
+                    if(check(TokenType.R_BRACE)){
+                        brace--;
+                        next();
+                    }
+                }
+                break;
+            }
         }
         if(brace==1)expect(TokenType.R_BRACE);
         if(deep==2){
