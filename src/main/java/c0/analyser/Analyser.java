@@ -678,7 +678,7 @@ public final class Analyser {
             else if (check(TokenType.IF_KW)) instructions.addAll(analyseIfStmt());
             else if (check(TokenType.WHILE_KW)) instructions.addAll(analyseWhileStmt());
             else if (check(TokenType.RETURN_KW)) instructions.addAll(analyseReturnStmt());
-            else if (check(TokenType.L_BRACE)) instructions.addAll(analyseBlockStmt(0));
+            else if (check(TokenType.L_BRACE)) instructions.addAll(analyseBlockStmt());
             else if (check(TokenType.SEMICOLON)) analyseEmptyStmt();
             else if (check(TokenType.BREAK_KW)) break;
             else if (check(TokenType.CONTINUE_KW)) break;
@@ -780,7 +780,7 @@ public final class Analyser {
         List<Jump> jumps=new ArrayList<>();
         expect(TokenType.IF_KW);
         Value jumpcondition =analyseExpr(peek());
-        List<Instruction> block =analyseBlockStmt(0);
+        List<Instruction> block =analyseBlockStmt();
         boolean hasRet=false;
         if(block.size()>0&&block.get(block.size()-1).getOpt()==Operation.RET){
             hasRet=true;
@@ -798,7 +798,7 @@ public final class Analyser {
             if (check(TokenType.IF_KW)){
                 next();
                 jumpcondition=analyseExpr(peek());
-                block=analyseBlockStmt(0);
+                block=analyseBlockStmt();
                 if(block.size()>0&&block.get(block.size()-1).getOpt()==Operation.RET){
                     hasRet=true;
                 }
@@ -812,7 +812,7 @@ public final class Analyser {
                 hasRet=false;
             }
             else {
-                block=analyseBlockStmt(0);
+                block=analyseBlockStmt();
                 if(block.size()>0&&block.get(block.size()-1).getOpt()==Operation.RET){
                     hasRet=true;
                     hasReturnValue =true;
@@ -843,7 +843,7 @@ public final class Analyser {
         boolean hasRet=false;
         breakdeep++;
         Value whilecondition =analyseExpr(peek());
-        List<Instruction> block =analyseBlockStmt(0);
+        List<Instruction> block =analyseBlockStmt();
         instructions.addAll(whilecondition.instructions);
         instructions.add(new Instruction(Operation.BR_TRUE,1));
         instructions.add(new Instruction(Operation.BR,block.size()+1));
@@ -981,7 +981,7 @@ private List<Instruction> analyseBlockStmt(int len)throws CompileError{
         if(type.getTokenType()!=TokenType.VOID){
             table.setFunctionType(type.getTokenType());
         }
-        instructions.addAll(analyseBlockStmt(0));
+        instructions.addAll(analyseBlockStmt());
         hasReturnValue=false;
         if(type.getTokenType()==TokenType.VOID){
             instructions.add(new Instruction(Operation.RET));
