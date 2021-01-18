@@ -627,6 +627,7 @@ public final class Analyser {
             expect(TokenType.R_PAREN);
         }else {
             System.out.println(peek().toString());
+            System.out.println(front.toString());
             throw new AnalyzeError(ErrorCode.ExprERROR, peek().getEndPos());
         }
         return value;
@@ -646,6 +647,9 @@ public final class Analyser {
     private List<Instruction> analyseStmt()throws CompileError{
         List<Instruction> instructions=new ArrayList<>();
 
+        if(check(TokenType.ELSE_KW)){
+            throw new AnalyzeError(ErrorCode.IfElseNotMatch, peek().getStartPos());
+        }
         if (check(TokenType.BREAK_KW)&&breakdeep==1) throw new AnalyzeError(ErrorCode.BreakERROR,new Pos(0,0));
         while(checkStmt()){
             if (check(TokenType.LET_KW) || check(TokenType.CONST_KW)) instructions.addAll(analyseDeclStmt(false));
