@@ -631,7 +631,7 @@ public final class Analyser {
         {
             Token string=next();
             table.addSymbol((String)string.getValue(),TokenType.STRING_LITERAL, SymbolType.STRING,1,true,true);
-            long off=table.getSymbolOff((String) front.getValue(),deep);
+            long off=table.getSymbolOff((String) front.getValue());
             instructions.add(new Instruction(Operation.PUSH,off));
             value.setInstructions(instructions);
             value.setConstant(true);
@@ -724,7 +724,7 @@ public final class Analyser {
         if(isGlobal){
             table.addSymbol((String) ident.getValue(),type.getTokenType(),SymbolType.VAR,deep,false,true);
             if(isInit){
-                long Off =table.getSymbolOff((String) ident.getValue(),deep);
+                long Off =table.getSymbolOff((String) ident.getValue());
                 table.getInstructions().add(new Instruction(Operation.GLOBA,Off));
                 table.getInstructions().addAll(analysis);
                 table.getInstructions().add(new Instruction(Operation.STORE_64));
@@ -762,7 +762,7 @@ public final class Analyser {
 
         if(isGlobal){
             table.addSymbol((String) ident.getValue(),type.getTokenType(),SymbolType.VAR,deep,true,true);
-            long Off =table.getSymbolOff((String) ident.getValue(),deep);
+            long Off =table.getSymbolOff((String) ident.getValue());
             table.getInstructions().add(new Instruction(Operation.GLOBA,Off));
             table.getInstructions().addAll(analysis);
             table.getInstructions().add(new Instruction(Operation.STORE_64));
