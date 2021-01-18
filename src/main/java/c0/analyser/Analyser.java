@@ -377,20 +377,22 @@ public final class Analyser {
         Value left=analyseAE(front);
         instructions.addAll(left.instructions);
         TokenType needType=left.tokenType;
-        if (peek().getTokenType()==TokenType.AS_KW){
+        while (peek().getTokenType()==TokenType.AS_KW){
             next();
             if (peek().getTokenType()==TokenType.INT){
-                if (needType==TokenType.DOUBLE){
+                if (needType==TokenType.DOUBLE||needType==TokenType.DOUBLE_LITERAL){
                     needType=TokenType.INT;
                     instructions.add(new Instruction(Operation.FTOI));
                 }
                 next();
             }else if(peek().getTokenType()==TokenType.DOUBLE){
-                if (needType==TokenType.INT){
+                if (needType==TokenType.INT||needType==TokenType.UINT_LITERAL){
                     needType=TokenType.DOUBLE;
                     instructions.add(new Instruction(Operation.ITOF));
                 }
                 next();
+            }else {
+                throw new AnalyzeError(ErrorCode.ASERROR,peek().getStartPos());
             }
         }
         value.setTokenType(needType);
@@ -902,7 +904,10 @@ public final class Analyser {
                 throw new AnalyzeError(ErrorCode.ShouldReturn, peek().getStartPos());
             }
             Value right =analyseExpr(peek());
-            if(type!=right.tokenType){
+            if(type==TokenType.INT&&right.tokenType!=TokenType.INT&&right.tokenType!=TokenType.UINT_LITERAL){
+                throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+            }
+            if(type==TokenType.DOUBLE&&right.tokenType!=TokenType.DOUBLE&&right.tokenType!=TokenType.DOUBLE_LITERAL){
                 throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
             }
             instructions.addAll(right.instructions);

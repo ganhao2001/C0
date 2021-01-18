@@ -86,20 +86,32 @@ public class Tokenizer {
                         peek=='+'||peek=='-'){
                     if(peek=='e'||peek=='E'){
                         if(!isS) isS=true;
-                        else throw new TokenizeError(ErrorCode.InvalidDouble,it.currentPos());
+                        else {
+                            System.out.println("111");
+                            throw new TokenizeError(ErrorCode.InvalidDouble,it.currentPos());
+                        }
                     }
                     if(peek=='+'||peek=='-'){
                         if(!isS){
                             if(!isSigned){
                                 isSigned=true;
-                            }else throw new TokenizeError(ErrorCode.InvalidDouble,it.currentPos());
-                        }else throw new TokenizeError(ErrorCode.InvalidDouble,it.currentPos());
+                            }else {
+                                System.out.println("222");
+                                throw new TokenizeError(ErrorCode.InvalidDouble,it.currentPos());
+                            }
+                        }else {
+                            System.out.println("333");
+                            throw new TokenizeError(ErrorCode.InvalidDouble,it.currentPos());
+                        }
                     }
                     num+=peek;
                     it.nextChar();
                     peek=it.peekChar();
                 }
-            }else throw new TokenizeError(ErrorCode.InvalidDouble,it.currentPos());
+            }else {
+                System.out.println("444");
+                throw new TokenizeError(ErrorCode.InvalidDouble,it.currentPos());
+            }
             endPos =new Pos(it.currentPos().row,it.currentPos().col);
             Double doublenum=Double.parseDouble(num);
             Token token=new Token(TokenType.DOUBLE_LITERAL,doublenum,startPos,endPos);

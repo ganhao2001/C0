@@ -40,5 +40,6 @@ public enum ErrorCode {
     ExpectedToken,
     ExprERROR,
     WithOutMain,							// 无运行入口					[语义分析]
-    BreakERROR
+    BreakERROR,
+    ASERROR
 }
