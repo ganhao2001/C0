@@ -173,34 +173,47 @@ public final class Analyser {
     private Value analyseExpr(Token front)throws CompileError{
         Value value=new Value();
         List<Instruction> instructions=new ArrayList<>();
-        if (front.getTokenType()==TokenType.IDENT){
-            if(front.equals(peek())) front=next();
-            if(peek().getTokenType()==TokenType.ASSIGN){
-                next();
-                boolean isGlobal=false;
-                SymbolEntry symbolEntry=table.searchlocalSymbol((String)front.getValue(),this.deep);
-                if (symbolEntry==null) {
-                    symbolEntry= table.searchGlobalSymbol((String)front.getValue());
-                    isGlobal=true;
+        if (front==null){
+            if(peek().getTokenType()==TokenType.IDENT){
+                front=next();
+                if(peek().getTokenType()==TokenType.ASSIGN){
+                    next();
+                    boolean isGlobal=false;
+                    SymbolEntry symbolEntry=table.searchlocalSymbol((String)front.getValue(),this.deep);
+                    if (symbolEntry==null) {
+                        symbolEntry= table.searchGlobalSymbol((String)front.getValue());
+                        isGlobal=true;
+                    }
+                    if (symbolEntry==null)throw new AnalyzeError(ErrorCode.NotDeclared, front.getStartPos());
+                    if(symbolEntry.isConstant()) throw new AnalyzeError(ErrorCode.AssignToConstant, front.getStartPos());
+                    if(isGlobal) instructions.add(new Instruction(Operation.GLOBA,symbolEntry.getStackOffset()));
+                    else {
+                        if(symbolEntry.getSymbolType()==SymbolType.PARAM){
+                            instructions.add(new Instruction(Operation.ARGA,symbolEntry.getStackOffset()));
+                        }else instructions.add(new Instruction(Operation.LOCA,symbolEntry.getStackOffset()));
+                    }
+                    Value right=analyseExpr(peek());
+                    if(symbolEntry.getTokenType()!=right.tokenType) throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+                    instructions.addAll(right.instructions);
+                    instructions.add(new Instruction(Operation.STORE_64));
+                    value.setInstructions(instructions);
+                    value.setConstant(false);
+                    value.setTokenType(TokenType.VOID);
                 }
-                if (symbolEntry==null)throw new AnalyzeError(ErrorCode.NotDeclared, front.getStartPos());
-                if(symbolEntry.isConstant()) throw new AnalyzeError(ErrorCode.AssignToConstant, front.getStartPos());
-                if(isGlobal) instructions.add(new Instruction(Operation.GLOBA,symbolEntry.getStackOffset()));
                 else {
-                    if(symbolEntry.getSymbolType()==SymbolType.PARAM){
-                        instructions.add(new Instruction(Operation.ARGA,symbolEntry.getStackOffset()));
-                    }else instructions.add(new Instruction(Operation.LOCA,symbolEntry.getStackOffset()));
+                    Value left=analyseCE(front);
+                    Value right = analyseBC(left);
+                    instructions.addAll(left.instructions);
+                    if(right!=null){
+                        instructions.addAll(right.instructions);
+                    }
+                    value.setTokenType(left.tokenType);
+                    value.setInstructions(instructions);
+                    value.setConstant(true);
                 }
-                Value right=analyseExpr(peek());
-                if(symbolEntry.getTokenType()!=right.tokenType) throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
-                instructions.addAll(right.instructions);
-                instructions.add(new Instruction(Operation.STORE_64));
-                value.setInstructions(instructions);
-                value.setConstant(false);
-                value.setTokenType(TokenType.VOID);
             }
             else {
-                Value left=analyseCE(front);
+                Value left=analyseCE(peek());
                 Value right = analyseBC(left);
                 instructions.addAll(left.instructions);
                 if(right!=null){
@@ -210,6 +223,7 @@ public final class Analyser {
                 value.setInstructions(instructions);
                 value.setConstant(true);
             }
+
         }
         else {
             Value left=analyseCE(front);
@@ -581,7 +595,6 @@ public final class Analyser {
             Double d=(Double) dtoken.getValue();
             long li=Double.doubleToLongBits(d);
             instructions.add(new Instruction(Operation.PUSH,li));
-
             value.setTokenType(TokenType.DOUBLE_LITERAL);
             value.setConstant(true);
             value.setInstructions(instructions);
@@ -844,7 +857,7 @@ public final class Analyser {
 
     private List<Instruction> analyseExprStmt()throws CompileError{
         List<Instruction> instructions=new ArrayList<>();
-        instructions.addAll(analyseExpr(peek()).instructions);
+        instructions.addAll(analyseExpr(null).instructions);
         expect(TokenType.SEMICOLON);
         return instructions;
     }
