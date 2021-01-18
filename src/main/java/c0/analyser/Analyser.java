@@ -73,11 +73,9 @@ public final class Analyser {
         if (peekedToken != null) {
             var token = peekedToken;
             peekedToken = null;
-            System.out.println(token.toString());
             return token;
         } else {
             Token next= tokenizer.nextToken();
-            System.out.println(next.toString());
             return next;
         }
     }
