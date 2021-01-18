@@ -891,6 +891,7 @@ public final class Analyser {
                 throw new AnalyzeError(ErrorCode.ShouldReturn, peek().getStartPos());
             }
         }
+        whileOff=0;
         this.deep--;
         return instructions;
     }
