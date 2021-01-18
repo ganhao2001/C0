@@ -37,6 +37,7 @@ public final class Analyser {
     int nextOffset = 0;
     int deep =1;
     int retdeep=1;
+    int breakdeep=1;
     public Analyser(Tokenizer tokenizer) {
         this.tokenizer = tokenizer;
         this.instructions = new ArrayList<>();
@@ -644,7 +645,7 @@ public final class Analyser {
     private List<Instruction> analyseStmt()throws CompileError{
         List<Instruction> instructions=new ArrayList<>();
 
-
+        if (check(TokenType.BREAK_KW)&&breakdeep==1) throw new AnalyzeError(ErrorCode.BreakERROR,new Pos(0,0));
         while(checkStmt()){
             if (check(TokenType.LET_KW) || check(TokenType.CONST_KW)) instructions.addAll(analyseDeclStmt(false));
             else if (check(TokenType.IF_KW)) instructions.addAll(analyseIfStmt());
@@ -652,9 +653,10 @@ public final class Analyser {
             else if (check(TokenType.RETURN_KW)) instructions.addAll(analyseReturnStmt());
             else if (check(TokenType.L_BRACE)) instructions.addAll(analyseBlockStmt());
             else if (check(TokenType.SEMICOLON)) analyseEmptyStmt();
+            else if (check(TokenType.BREAK_KW)) break;
             else instructions.addAll(analyseExprStmt());
         }
-        if (check(TokenType.BREAK_KW)) throw new AnalyzeError(ErrorCode.NotComplete,new Pos(0,0));
+
         return instructions;
     }
     private List<Instruction> analyseLetDeclStmt(boolean isGlobal)throws CompileError{
@@ -799,6 +801,7 @@ public final class Analyser {
         List<Instruction> instructions=new ArrayList<>();
         expect(TokenType.WHILE_KW);
         boolean hasRet=false;
+        breakdeep=2;
         Value whilecondition =analyseExpr(peek());
         List<Instruction> block =analyseBlockStmt();
         instructions.addAll(whilecondition.instructions);
@@ -806,6 +809,7 @@ public final class Analyser {
         instructions.add(new Instruction(Operation.BR,block.size()+1));
         instructions.addAll(block);
         instructions.add(new Instruction(Operation.BR,(-(whilecondition.instructions.size()+block.size()+3))));
+        breakdeep=1;
         return instructions;
     }
     private List<Instruction> analyseBlockStmt()throws CompileError{
@@ -816,6 +820,7 @@ public final class Analyser {
         this.deep++;
         while (!check(TokenType.R_BRACE)){
             instructions.addAll(analyseStmt());
+            if (check(TokenType.BREAK_KW)) break;
         }
         expect(TokenType.R_BRACE);
         if(deep==2){

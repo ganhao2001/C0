@@ -115,9 +115,6 @@ public class App {
                 System.exit(1);
                 return;
             }
-            for (Instruction instruction : instructions) {
-                output.println(instruction.toString());
-            }
         } else {
             System.err.println("Please specify either '--analyse' or '--tokenize'.");
             System.exit(3);
