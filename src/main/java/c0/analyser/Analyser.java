@@ -253,18 +253,24 @@ public final class Analyser {
             Value right=analyseTE(peek());
             instructions.addAll(right.instructions);
 
-            if (left.tokenType!=right.tokenType||left.tokenType==TokenType.VOID)
+            if (left.tokenType==TokenType.VOID)
                 throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+            if((left.tokenType==TokenType.INT||left.tokenType==TokenType.UINT_LITERAL)&& (right.tokenType!=TokenType.INT&&right.tokenType!=TokenType.UINT_LITERAL)){
+                throw new AnalyzeError(ErrorCode.TypeMisMatch ,peek().getStartPos());
+            }
+            if((left.tokenType==TokenType.DOUBLE||left.tokenType==TokenType.DOUBLE_LITERAL)&& (right.tokenType!=TokenType.DOUBLE&&right.tokenType!=TokenType.DOUBLE_LITERAL)){
+                throw new AnalyzeError(ErrorCode.TypeMisMatch ,peek().getStartPos());
+            }
             if (op.getTokenType()==TokenType.PLUS){
-                if (left.tokenType==TokenType.INT){
+                if (left.tokenType==TokenType.INT||left.tokenType==TokenType.UINT_LITERAL){
                     instructions.add(new Instruction(Operation.ADD_I));
-                }else if (left.tokenType==TokenType.DOUBLE){
+                }else if (left.tokenType==TokenType.DOUBLE||left.tokenType==TokenType.DOUBLE_LITERAL){
                     instructions.add(new Instruction(Operation.ADD_F));
                 }else throw new AnalyzeError(ErrorCode.ShouldNotBeExist, peek().getStartPos());
             }else {
-                if (left.tokenType==TokenType.INT){
+                if (left.tokenType==TokenType.INT||left.tokenType==TokenType.UINT_LITERAL){
                     instructions.add(new Instruction(Operation.SUB_I));
-                }else if (left.tokenType==TokenType.DOUBLE){
+                }else if (left.tokenType==TokenType.DOUBLE||left.tokenType==TokenType.DOUBLE_LITERAL){
                     instructions.add(new Instruction(Operation.SUB_F));
                 }else throw new AnalyzeError(ErrorCode.ShouldNotBeExist, peek().getStartPos());
             }
@@ -284,12 +290,18 @@ public final class Analyser {
 
             Value right =analyseCE(peek());
             instructions.addAll(right.instructions);
-            if(left.tokenType!=right.tokenType||left.tokenType==TokenType.VOID){
-                throw new AnalyzeError(ErrorCode.TypeMisMatch ,new Pos(0,0));
+            if(left.tokenType==TokenType.VOID){
+                throw new AnalyzeError(ErrorCode.TypeMisMatch ,peek().getStartPos());
             }
-            if(left.tokenType==TokenType.INT){
+            if((left.tokenType==TokenType.INT||left.tokenType==TokenType.UINT_LITERAL)&& (right.tokenType!=TokenType.INT&&right.tokenType!=TokenType.UINT_LITERAL)){
+                throw new AnalyzeError(ErrorCode.TypeMisMatch ,peek().getStartPos());
+            }
+            if((left.tokenType==TokenType.DOUBLE||left.tokenType==TokenType.DOUBLE_LITERAL)&& (right.tokenType!=TokenType.DOUBLE&&right.tokenType!=TokenType.DOUBLE_LITERAL)){
+                throw new AnalyzeError(ErrorCode.TypeMisMatch ,peek().getStartPos());
+            }
+            if(left.tokenType==TokenType.INT||left.tokenType==TokenType.UINT_LITERAL){
                 instructions.add(new Instruction(Operation.CMP_I));
-            }else if(left.tokenType==TokenType.DOUBLE){
+            }else if(left.tokenType==TokenType.DOUBLE||left.tokenType==TokenType.DOUBLE_LITERAL){
                 instructions.add(new Instruction(Operation.CMP_F));
             }else {
                 throw new AnalyzeError(ErrorCode.ShouldNotBeExist ,new Pos(0,0));
@@ -329,20 +341,25 @@ public final class Analyser {
             Token op =next();
             Value right =analyseFE(peek());
             instructions.addAll(right.instructions);
-            if(left.tokenType!=right.tokenType||left.tokenType==TokenType.VOID){
+            if(left.tokenType==TokenType.VOID){
                 throw new AnalyzeError(ErrorCode.TypeMisMatch ,new Pos(0,0));
             }
-
+            if((left.tokenType==TokenType.INT||left.tokenType==TokenType.UINT_LITERAL)&& (right.tokenType!=TokenType.INT&&right.tokenType!=TokenType.UINT_LITERAL)){
+                throw new AnalyzeError(ErrorCode.TypeMisMatch ,peek().getStartPos());
+            }
+            if((left.tokenType==TokenType.DOUBLE||left.tokenType==TokenType.DOUBLE_LITERAL)&& (right.tokenType!=TokenType.DOUBLE&&right.tokenType!=TokenType.DOUBLE_LITERAL)){
+                throw new AnalyzeError(ErrorCode.TypeMisMatch ,peek().getStartPos());
+            }
             if (op.getTokenType()==TokenType.MUL){
-                if (left.tokenType==TokenType.INT){
+                if (left.tokenType==TokenType.INT||left.tokenType==TokenType.UINT_LITERAL){
                     instructions.add(new Instruction(Operation.MUL_I));
-                }else if (left.tokenType==TokenType.DOUBLE){
+                }else if (left.tokenType==TokenType.DOUBLE||left.tokenType==TokenType.DOUBLE_LITERAL){
                     instructions.add(new Instruction(Operation.MUL_F));
                 }else throw new AnalyzeError(ErrorCode.ShouldNotBeExist, peek().getStartPos());
             }else {
-                if (left.tokenType==TokenType.INT){
+                if (left.tokenType==TokenType.INT||left.tokenType==TokenType.UINT_LITERAL){
                     instructions.add(new Instruction(Operation.DIV_I));
-                }else if (left.tokenType==TokenType.DOUBLE){
+                }else if (left.tokenType==TokenType.DOUBLE||left.tokenType==TokenType.DOUBLE_LITERAL){
                     instructions.add(new Instruction(Operation.DIV_F));
                 }else throw new AnalyzeError(ErrorCode.ShouldNotBeExist, peek().getStartPos());
             }
@@ -397,9 +414,9 @@ public final class Analyser {
             if(IE.tokenType==TokenType.VOID){
                 throw new AnalyzeError(ErrorCode.TypeMisMatch ,new Pos(0,0));
             }else {
-                if(IE.tokenType==TokenType.INT||IE.tokenType==TokenType.STRING_LITERAL||IE.tokenType==TokenType.CHAR_LITERAL){
+                if(IE.tokenType==TokenType.INT||IE.tokenType==TokenType.UINT_LITERAL||IE.tokenType==TokenType.STRING_LITERAL||IE.tokenType==TokenType.CHAR_LITERAL){
                     instructions.add(new Instruction(Operation.NEG_I));
-                }else if(IE.tokenType==TokenType.DOUBLE){
+                }else if(IE.tokenType==TokenType.DOUBLE||IE.tokenType==TokenType.DOUBLE_LITERAL){
                     instructions.add(new Instruction(Operation.NEG_F));
                 }else throw new AnalyzeError(ErrorCode.ShouldNotBeExist ,new Pos(0,0));
             }
