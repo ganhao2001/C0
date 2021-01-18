@@ -38,6 +38,7 @@ public final class Analyser {
     int deep =1;
     int retdeep=1;
     int breakdeep=1;
+    int breakOff[]=new int[10];
     public Analyser(Tokenizer tokenizer) {
         this.tokenizer = tokenizer;
         this.instructions = new ArrayList<>();
@@ -680,6 +681,7 @@ public final class Analyser {
             else if (check(TokenType.L_BRACE)) instructions.addAll(analyseBlockStmt());
             else if (check(TokenType.SEMICOLON)) analyseEmptyStmt();
             else if (check(TokenType.BREAK_KW)) break;
+            else if (check(TokenType.CONTINUE_KW)) break;
             else instructions.addAll(analyseExprStmt());
         }
 
@@ -720,6 +722,7 @@ public final class Analyser {
             table.addFuctionSymbol((String)ident.getValue(),type.getTokenType(),deep,false,true);
             if(isInit){
                 long Off =table.getFunctionTable().get(table.getFunctionTable().size()-1).getSymbolOff((String) ident.getValue(),deep);
+
                 instructions.add(new Instruction(Operation.LOCA,Off));
                 instructions.addAll(analysis);
                 instructions.add(new Instruction(Operation.STORE_64));
@@ -840,7 +843,7 @@ public final class Analyser {
         boolean hasRet=false;
         breakdeep++;
         Value whilecondition =analyseExpr(peek());
-        List<Instruction> block =analyseBlockStmt();
+        List<Instruction> block =analyseBlockStmt(whilecondition.instructions.size());
         instructions.addAll(whilecondition.instructions);
         instructions.add(new Instruction(Operation.BR_TRUE,1));
         instructions.add(new Instruction(Operation.BR,block.size()+1));
@@ -849,39 +852,39 @@ public final class Analyser {
         breakdeep--;
         return instructions;
     }
-//    private List<Instruction> analyseWhileBlockStmt(int len)throws CompileError{
-//        expect(TokenType.L_BRACE);
-//        List<Instruction> instructions=new ArrayList<>();
-//        whileOff=0;
-//        int breakOff=0;
-//        this.deep++;
-//        while (!check(TokenType.R_BRACE)){
-//            if(check(TokenType.EOF)) throw new AnalyzeError(ErrorCode.EOF,peek().getStartPos());
-//            List<Instruction> StmtInstructions=analyseStmt();
-//            whileOff+=StmtInstructions.size();
-//            instructions.addAll(StmtInstructions);
-//            if (check(TokenType.CONTINUE_KW)){
-//                instructions.add(new Instruction(Operation.BR,-(len+whileOff+3)));
-//                next();
-//            }
-//            if (check(TokenType.BREAK_KW)){
-//                breakOff=whileOff;
-//                Instruction breakIn=new Instruction(Operation.BR,0);
-//                instructions.add(breakIn);
-//                next();
-//            }
-//        }
-//        instructions.get(breakOff).setOff(instructions.size()-breakOff);
-//        expect(TokenType.R_BRACE);
-//        if(deep==2){
-//            if(table.getFunctionTable().get(table.getFunctionTable().size()-1).getType()!=TokenType.VOID&&!hasReturnValue){
-//                throw new AnalyzeError(ErrorCode.ShouldReturn, peek().getStartPos());
-//            }
-//        }
-//        whileOff=0;
-//        this.deep--;
-//        return instructions;
-//    }
+
+private List<Instruction> analyseBlockStmt(int len)throws CompileError{
+    expect(TokenType.L_BRACE);
+    List<Instruction> instructions=new ArrayList<>();
+    this.deep++;
+    int whileOff=0;
+    while (!check(TokenType.R_BRACE)){
+        if(check(TokenType.EOF)) throw new AnalyzeError(ErrorCode.EOF,peek().getStartPos());
+        List<Instruction> S=analyseStmt();
+        whileOff+=S.size();
+        instructions.addAll(S);
+        if(check(TokenType.CONTINUE_KW)){
+            instructions.add(new Instruction(Operation.BR,-(len+whileOff+3)));
+            next();
+        }
+        if (check(TokenType.BREAK_KW)){
+            breakOff[breakdeep]=whileOff;
+            Instruction breakIn=new Instruction(Operation.BR,0);
+            instructions.add(breakIn);
+            next();
+        }
+    }
+    instructions.get(breakOff[breakdeep]).setOff(instructions.size()-breakOff[breakdeep]);
+    expect(TokenType.R_BRACE);
+    if(deep==2){
+        if(table.getFunctionTable().get(table.getFunctionTable().size()-1).getType()!=TokenType.VOID&&!hasReturnValue){
+            throw new AnalyzeError(ErrorCode.ShouldReturn, peek().getStartPos());
+        }
+    }
+    this.deep--;
+    return instructions;
+
+}
     private List<Instruction> analyseBlockStmt()throws CompileError{
         expect(TokenType.L_BRACE);
         if (peek().getTokenType().ordinal() == 40)
@@ -892,21 +895,8 @@ public final class Analyser {
         while (!check(TokenType.R_BRACE)){
             List<Instruction> S=analyseStmt();
             instructions.addAll(S);
-            if (check(TokenType.BREAK_KW)&&breakdeep>1){
-                for(;brace>0;){
-                    while (!check(TokenType.R_BRACE)||!check(TokenType.L_BRACE)){
-                        next();
-                    }
-                    if (check(TokenType.L_BRACE)){
-                        brace++;
-                        next();
-                    }
-                    if(check(TokenType.R_BRACE)){
-                        brace--;
-                        next();
-                    }
-                }
-                break;
+            if (check(TokenType.BREAK_KW)||check(TokenType.CONTINUE_KW)){
+                throw new AnalyzeError(ErrorCode.BreakERROR,peek().getStartPos());
             }
 
             if(check(TokenType.EOF)) throw new AnalyzeError(ErrorCode.EOF,peek().getStartPos());
