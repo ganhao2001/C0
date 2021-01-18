@@ -73,9 +73,12 @@ public final class Analyser {
         if (peekedToken != null) {
             var token = peekedToken;
             peekedToken = null;
+            System.out.println(token.toString());
             return token;
         } else {
-            return tokenizer.nextToken();
+            Token next= tokenizer.nextToken();
+            System.out.println(next.toString());
+            return next;
         }
     }
 
@@ -257,13 +260,13 @@ public final class Analyser {
                     instructions.add(new Instruction(Operation.ADD_I));
                 }else if (left.tokenType==TokenType.DOUBLE){
                     instructions.add(new Instruction(Operation.ADD_F));
-                }else throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+                }else throw new AnalyzeError(ErrorCode.ShouldNotBeExist, peek().getStartPos());
             }else {
                 if (left.tokenType==TokenType.INT){
                     instructions.add(new Instruction(Operation.SUB_I));
                 }else if (left.tokenType==TokenType.DOUBLE){
                     instructions.add(new Instruction(Operation.SUB_F));
-                }else throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+                }else throw new AnalyzeError(ErrorCode.ShouldNotBeExist, peek().getStartPos());
             }
         }
         value.setTokenType(left.tokenType);
@@ -289,7 +292,7 @@ public final class Analyser {
             }else if(left.tokenType==TokenType.DOUBLE){
                 instructions.add(new Instruction(Operation.CMP_F));
             }else {
-                throw new AnalyzeError(ErrorCode.TypeMisMatch ,new Pos(0,0));
+                throw new AnalyzeError(ErrorCode.ShouldNotBeExist ,new Pos(0,0));
             }
             switch (op.getTokenType()){
                 case EQ:instructions.add(new Instruction(Operation.NOT));
@@ -335,13 +338,13 @@ public final class Analyser {
                     instructions.add(new Instruction(Operation.MUL_I));
                 }else if (left.tokenType==TokenType.DOUBLE){
                     instructions.add(new Instruction(Operation.MUL_F));
-                }else throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+                }else throw new AnalyzeError(ErrorCode.ShouldNotBeExist, peek().getStartPos());
             }else {
                 if (left.tokenType==TokenType.INT){
                     instructions.add(new Instruction(Operation.DIV_I));
                 }else if (left.tokenType==TokenType.DOUBLE){
                     instructions.add(new Instruction(Operation.DIV_F));
-                }else throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
+                }else throw new AnalyzeError(ErrorCode.ShouldNotBeExist, peek().getStartPos());
             }
         }
         value.setConstant(true);
@@ -398,7 +401,7 @@ public final class Analyser {
                     instructions.add(new Instruction(Operation.NEG_I));
                 }else if(IE.tokenType==TokenType.DOUBLE){
                     instructions.add(new Instruction(Operation.NEG_F));
-                }else throw new AnalyzeError(ErrorCode.TypeMisMatch ,new Pos(0,0));
+                }else throw new AnalyzeError(ErrorCode.ShouldNotBeExist ,new Pos(0,0));
             }
         }
         value.setConstant(true);
