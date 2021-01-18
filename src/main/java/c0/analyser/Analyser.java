@@ -626,6 +626,7 @@ public final class Analyser {
             value=analyseExpr(peek());
             expect(TokenType.R_PAREN);
         }else {
+            System.out.println(peek().toString());
             throw new AnalyzeError(ErrorCode.ExprERROR, peek().getEndPos());
         }
         return value;
