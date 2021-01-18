@@ -80,11 +80,21 @@ public class Table {
     public void addFuctionSymbol(String name,TokenType tokenType,int deep,boolean isConstant, boolean isIitialized)throws AnalyzeError{
         this.functionTable.get(this.functionTable.size()-1).addVar(name,tokenType,deep,isConstant,isIitialized);
     }
-    public int getSymbolOff(String name){
-        for (SymbolEntry symbolEntry:this.symbolTable){
-            if (symbolEntry.getName().equals(name))return symbolEntry.getStackOffset();
+    public int getSymbolOff(String name,int deep)throws AnalyzeError{
+        if(deep==1){
+            for (SymbolEntry symbolEntry:this.symbolTable){
+                if (symbolEntry.getName().equals(name))return symbolEntry.getStackOffset();
+            }
+            return -1;
+        }else {
+            SymbolEntry search=searchlocalSymbol(name,deep);
+            if(search==null){
+                for (SymbolEntry symbolEntry:this.symbolTable){
+                    if (symbolEntry.getName().equals(name))return symbolEntry.getStackOffset();
+                }
+            }
+            return search.getStackOffset();
         }
-        return -1;
     }
     public void addInstructionsToFunction(List<Instruction> instructions){
         Function function=this.functionTable.get(this.functionTable.size()-1);
