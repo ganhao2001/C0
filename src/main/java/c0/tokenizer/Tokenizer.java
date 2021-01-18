@@ -5,6 +5,7 @@ import c0.error.TokenizeError;
 import c0.error.ErrorCode;
 import c0.util.Pos;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 
 public class Tokenizer {
@@ -87,20 +88,17 @@ public class Tokenizer {
                     if(peek=='e'||peek=='E'){
                         if(!isS) isS=true;
                         else {
-                            System.out.println("111");
                             throw new TokenizeError(ErrorCode.InvalidDouble,it.currentPos());
                         }
                     }
                     if(peek=='+'||peek=='-'){
-                        if(!isS){
+                        if(isS){
                             if(!isSigned){
                                 isSigned=true;
                             }else {
-                                System.out.println("222");
                                 throw new TokenizeError(ErrorCode.InvalidDouble,it.currentPos());
                             }
                         }else {
-                            System.out.println("333");
                             throw new TokenizeError(ErrorCode.InvalidDouble,it.currentPos());
                         }
                     }
@@ -109,10 +107,13 @@ public class Tokenizer {
                     peek=it.peekChar();
                 }
             }else {
-                System.out.println("444");
                 throw new TokenizeError(ErrorCode.InvalidDouble,it.currentPos());
             }
             endPos =new Pos(it.currentPos().row,it.currentPos().col);
+            if(isS){
+                BigDecimal bd=new BigDecimal(num);
+                num=bd.toPlainString();
+            }
             Double doublenum=Double.parseDouble(num);
             Token token=new Token(TokenType.DOUBLE_LITERAL,doublenum,startPos,endPos);
             return token;
@@ -120,6 +121,11 @@ public class Tokenizer {
         /**Uint*/
         else {
             endPos=new Pos(it.currentPos().row,it.currentPos().col);
+            double ret=Double.parseDouble(num);
+            if(ret>2147483647){
+                Token token=new Token(TokenType.DOUBLE_LITERAL,ret,startPos,endPos);
+                return token;
+            }
             Integer intnum=Integer.parseInt(num);
             Token token=new Token(TokenType.UINT_LITERAL,intnum,startPos,endPos);
             return token;
