@@ -802,7 +802,7 @@ public final class Analyser {
         List<Instruction> instructions=new ArrayList<>();
         expect(TokenType.WHILE_KW);
         boolean hasRet=false;
-        breakdeep=2;
+        breakdeep++;
         Value whilecondition =analyseExpr(peek());
         List<Instruction> block =analyseBlockStmt();
         instructions.addAll(whilecondition.instructions);
@@ -810,7 +810,7 @@ public final class Analyser {
         instructions.add(new Instruction(Operation.BR,block.size()+1));
         instructions.addAll(block);
         instructions.add(new Instruction(Operation.BR,(-(whilecondition.instructions.size()+block.size()+3))));
-        breakdeep=1;
+        breakdeep--;
         return instructions;
     }
     private List<Instruction> analyseBlockStmt()throws CompileError{
@@ -819,11 +819,27 @@ public final class Analyser {
             throw new AnalyzeError(ErrorCode.NotComplete, peek().getStartPos());
         List<Instruction> instructions=new ArrayList<>();
         this.deep++;
+        int brace=1;
         while (!check(TokenType.R_BRACE)){
             instructions.addAll(analyseStmt());
-            if (check(TokenType.BREAK_KW)) break;
+            if (check(TokenType.BREAK_KW)&&breakdeep>1){
+                for(;brace>0;){
+                    while (!check(TokenType.R_BRACE)||!check(TokenType.L_BRACE)){
+                        next();
+                    }
+                    if (check(TokenType.L_BRACE)){
+                        brace++;
+                        next();
+                    }
+                    if(check(TokenType.R_BRACE)){
+                        brace--;
+                        next();
+                    }
+                }
+                break;
+            }
         }
-        expect(TokenType.R_BRACE);
+        if(brace==1)expect(TokenType.R_BRACE);
         if(deep==2){
             if(table.getFunctionTable().get(table.getFunctionTable().size()-1).getType()!=TokenType.VOID&&!hasReturnValue){
                 throw new AnalyzeError(ErrorCode.ShouldReturn, peek().getStartPos());
