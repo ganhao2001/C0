@@ -449,6 +449,7 @@ public final class Analyser {
                                 throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
                             }
                             expect(TokenType.R_PAREN);
+                            instructions1.add(new Instruction(Operation.STACKALLOC,0));
                             instructions1.addAll(Int.instructions);
                             instructions1.add(new Instruction(Operation.CALLNAME,3));
                             value.setTokenType(TokenType.VOID);
@@ -461,6 +462,7 @@ public final class Analyser {
                                 throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
                             }
                             expect(TokenType.R_PAREN);
+                            instructions1.add(new Instruction(Operation.STACKALLOC,0));
                             instructions1.addAll(ADouble.instructions);
                             instructions1.add(new Instruction(Operation.CALLNAME,4));
                             value.setTokenType(TokenType.VOID);
@@ -473,6 +475,7 @@ public final class Analyser {
                                 throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
                             }
                             expect(TokenType.R_PAREN);
+                            instructions1.add(new Instruction(Operation.STACKALLOC,0));
                             instructions1.addAll(AChar.instructions);
                             instructions1.add(new Instruction(Operation.CALLNAME,5));
                             value.setTokenType(TokenType.VOID);
@@ -485,6 +488,7 @@ public final class Analyser {
                                 throw new AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
                             }
                             expect(TokenType.R_PAREN);
+                            instructions1.add(new Instruction(Operation.STACKALLOC,0));
                             instructions1.addAll(string.instructions);
                             instructions1.add(new Instruction(Operation.CALLNAME, 6));
                             value.setTokenType(TokenType.VOID);
@@ -494,6 +498,7 @@ public final class Analyser {
                         case 7:
 
                             expect(TokenType.R_PAREN);
+                            instructions1.add(new Instruction(Operation.STACKALLOC,0));
                             instructions1.add(new Instruction(Operation.CALLNAME, 7));
                             value.setTokenType(TokenType.VOID);
                             value.setInstructions(instructions1);
