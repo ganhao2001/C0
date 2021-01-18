@@ -60,6 +60,8 @@ public class Instruction {
     }
     public int getType() {
         switch (this.opt) {
+            case PUSH:
+                return 0x1;
             case LOCA:
                 return 0xa;
             case ARGA:
@@ -74,22 +76,40 @@ public class Instruction {
                 return 0x22;
             case DIV_I:
                 return 0x23;
+            case ADD_F:
+                return 0x24;
+            case SUB_F:
+                return 0x25;
+            case MUL_F:
+                return 0x26;
+            case DIV_F:
+                return 0x27;
             case STORE_64:
                 return 0x17;
             case CMP_I:
                 return 0x30;
-            case PUSH:
-                return 0x1;
+            case CMP_F:
+                return 0x32;
+            case NEG_I:
+                return 0x34;
+            case NEG_F:
+                return 0x35;
+            case ITOF:
+                return 0x36;
+            case FTOI:
+                return 0x37;
             case SET_LT:
                 return 0x39;
-            case BR_FALSE:
-                return 0x42;
-            case BR_TRUE:
-                return 0x43;
             case SET_GT:
                 return 0x3a;
             case BR:
                 return 0x41;
+            case BR_FALSE:
+                return 0x42;
+            case BR_TRUE:
+                return 0x43;
+            case CALL:
+                return 0x48;
             case RET:
                 return 0x49;
             case CALLNAME:
@@ -98,12 +118,10 @@ public class Instruction {
                 return 0x13;
             case STACKALLOC:
                 return 0x1a;
-            case CALL:
-                return 0x48;
+
             case NOT:
                 return 0x2e;
-            case NEG_I:
-                return 0x34;
+
             default:
                 return 0xFF;
         }
