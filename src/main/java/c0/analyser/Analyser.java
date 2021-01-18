@@ -682,10 +682,10 @@ public final class Analyser {
             Value right =analyseExpr(peek());
             analysis.addAll(right.instructions);
             if(type.getTokenType()==TokenType.INT){
-                if (right.tokenType!=TokenType.UINT_LITERAL)
+                if (right.tokenType!=TokenType.UINT_LITERAL&&right.tokenType!=TokenType.INT)
                     throw new  AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
             }else if(type.getTokenType()==TokenType.DOUBLE){
-                if(right.tokenType!=TokenType.DOUBLE_LITERAL){
+                if(right.tokenType!=TokenType.DOUBLE_LITERAL&&right.tokenType!=TokenType.DOUBLE){
                     throw new  AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
                 }
             }
@@ -722,10 +722,10 @@ public final class Analyser {
         Value right=analyseExpr(peek());
         analysis.addAll(right.instructions);
         if(type.getTokenType()==TokenType.INT){
-            if (right.tokenType!=TokenType.UINT_LITERAL)
+            if (right.tokenType!=TokenType.UINT_LITERAL&&right.tokenType!=TokenType.INT)
                 throw new  AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
         }else if(type.getTokenType()==TokenType.DOUBLE){
-            if(right.tokenType!=TokenType.DOUBLE_LITERAL){
+            if(right.tokenType!=TokenType.DOUBLE_LITERAL&&right.tokenType!=TokenType.DOUBLE){
                 throw new  AnalyzeError(ErrorCode.TypeMisMatch, peek().getStartPos());
             }
         }
