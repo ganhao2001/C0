@@ -874,6 +874,7 @@ public final class Analyser {
                 }
                 break;
             }
+            if(check(TokenType.EOF)) throw new AnalyzeError(ErrorCode.EOF,peek().getStartPos());
         }
         if(brace==1)expect(TokenType.R_BRACE);
         if(deep==2){

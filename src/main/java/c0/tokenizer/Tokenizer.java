@@ -194,7 +194,7 @@ public class Tokenizer {
             case '/':
                 if (it.peekChar() == '/') {
                     it.nextChar();
-                    while (it.peekChar()!='\n'){
+                    while (it.peekChar()!='\n'&&!it.isEOF()){
                         it.nextChar();
                     }
                     return null;
