@@ -120,9 +120,12 @@ public class Function {
         }else throw new AnalyzeError(ErrorCode.SymbolShouldInGlobal,new Pos(0,0));
     }
 
-    public int getSymbolOff(String name){
-        for (SymbolEntry symbolEntry:this.symbolTable){
-            if (symbolEntry.getName().equals(name)) return symbolEntry.getStackOffset();
+    public int getSymbolOff(String name,int deep){
+        while (deep>1){
+            for (SymbolEntry symbolEntry:this.symbolTable){
+                if (symbolEntry.getName().equals(name)&&symbolEntry.getDeep()==deep) return symbolEntry.getStackOffset();
+            }
+            deep--;
         }
         return -1;
     }

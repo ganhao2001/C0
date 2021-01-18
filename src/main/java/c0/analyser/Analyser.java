@@ -719,7 +719,7 @@ public final class Analyser {
         }else {
             table.addFuctionSymbol((String)ident.getValue(),type.getTokenType(),deep,false,true);
             if(isInit){
-                long Off =table.getFunctionTable().get(table.getFunctionTable().size()-1).getSymbolOff((String) ident.getValue());
+                long Off =table.getFunctionTable().get(table.getFunctionTable().size()-1).getSymbolOff((String) ident.getValue(),deep);
                 instructions.add(new Instruction(Operation.LOCA,Off));
                 instructions.addAll(analysis);
                 instructions.add(new Instruction(Operation.STORE_64));
@@ -755,7 +755,7 @@ public final class Analyser {
             table.getInstructions().add(new Instruction(Operation.STORE_64));
         }else {
             table.addFuctionSymbol((String)ident.getValue(),type.getTokenType(),deep,true,true);
-            long Off =table.getFunctionTable().get(table.getFunctionTable().size()-1).getSymbolOff((String) ident.getValue());
+            long Off =table.getFunctionTable().get(table.getFunctionTable().size()-1).getSymbolOff((String) ident.getValue(),deep);
             instructions.add(new Instruction(Operation.LOCA,Off));
             instructions.addAll(analysis);
             instructions.add(new Instruction(Operation.STORE_64));
@@ -890,7 +890,8 @@ public final class Analyser {
         this.deep++;
         int brace=1;
         while (!check(TokenType.R_BRACE)){
-            instructions.addAll(analyseStmt());
+            List<Instruction> S=analyseStmt();
+            instructions.addAll(S);
             if (check(TokenType.BREAK_KW)&&breakdeep>1){
                 for(;brace>0;){
                     while (!check(TokenType.R_BRACE)||!check(TokenType.L_BRACE)){
@@ -907,6 +908,7 @@ public final class Analyser {
                 }
                 break;
             }
+
             if(check(TokenType.EOF)) throw new AnalyzeError(ErrorCode.EOF,peek().getStartPos());
         }
         if(brace==1)expect(TokenType.R_BRACE);
