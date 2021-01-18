@@ -386,8 +386,9 @@ public final class Analyser {
         if(front.getTokenType()==TokenType.MINUS){
             next();
             isNot=true;
+            front=peek();
         }
-        Value IE=analyseIE(peek());
+        Value IE=analyseIE(front);
         instructions.addAll(IE.instructions);
         if(isNot){
             if(IE.tokenType==TokenType.VOID){
