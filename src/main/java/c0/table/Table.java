@@ -92,6 +92,7 @@ public class Table {
                 for (SymbolEntry symbolEntry:this.symbolTable){
                     if (symbolEntry.getName().equals(name))return symbolEntry.getStackOffset();
                 }
+                return -1;
             }
             return search.getStackOffset();
         }
