@@ -118,10 +118,8 @@ public class Instruction {
                 return 0x13;
             case STACKALLOC:
                 return 0x1a;
-
             case NOT:
                 return 0x2e;
-
             default:
                 return 0xFF;
         }
